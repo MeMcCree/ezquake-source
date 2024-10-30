@@ -4049,6 +4049,11 @@ void CL_ParseServerMessage (void)
 					CL_ParseQizmoVoice();
 					break;
 				}
+			case svc_updatetimer:
+			{
+				cl.tftime = MSG_ReadLong();
+				break;
+			}
 		}
 
 		// cl_messages, update size

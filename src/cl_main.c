@@ -1906,12 +1906,11 @@ static void CL_InitLocal(void)
 	// debugging weapons
 	Cvar_Register(&cl_debug_weapon_view);
 
-	snprintf(st, sizeof(st), "ezQuake-tf", REVISION);
-
 	if (COM_CheckParm (cmdline_param_client_norjscripts) || COM_CheckParm (cmdline_param_client_noscripts))
 		Cvar_SetValue (&allow_scripts, 0);
 
- 	Info_SetValueForStarKey (cls.userinfo, "*client", st, MAX_INFO_STRING);
+ 	Info_SetValueForStarKey (cls.userinfo, "*client", "ezQuake-tf", MAX_INFO_STRING);
+	Info_SetValueForStarKey(cls.userinfo, "*clientver", "2", MAX_INFO_STRING);
 
 	if (COM_CheckParm(cmdline_param_client_noindphys))
 	{
