@@ -543,6 +543,7 @@ set(common_hud
         ${SOURCE_DIR}/hud_teaminfo.c
         ${SOURCE_DIR}/hud_tracking.c
         ${SOURCE_DIR}/hud_weapon_stats.c
+        ${SOURCE_DIR}/hud_tf.c
         ${common_hud_headers}
 )
 source_group(TREE ${SOURCE_DIR} PREFIX "Source Files/common_hud" FILES ${common_hud})

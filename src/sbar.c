@@ -103,6 +103,7 @@ mpic_t		*sb_ammo[4];
 mpic_t		*sb_sigil[4];
 mpic_t		*sb_armor[3];
 mpic_t		*sb_items[32];
+mpic_t* sb_grens[11];
 
 mpic_t	*sb_faces[5][2];		// 0 is dead, 1-4 are alive
 // 0 is static, 1 is temporary animation
@@ -271,6 +272,16 @@ void Sbar_Init(void)
 	sb_faces[1][1] = Draw_CacheWadPic("face_p4", WADPIC_SB_FACE_P4);
 	sb_faces[0][0] = Draw_CacheWadPic("face5", WADPIC_SB_FACE5);
 	sb_faces[0][1] = Draw_CacheWadPic("face_p5", WADPIC_SB_FACE_P5);
+
+	sb_grens[1] = Draw_CachePicSafe("textures/grens/gren_normal.png", false, true);
+	sb_grens[2] = Draw_CachePicSafe("textures/grens/gren_concussion.png", false, true);
+	sb_grens[3] = Draw_CachePicSafe("textures/grens/gren_nail.png", false, true);
+	sb_grens[4] = Draw_CachePicSafe("textures/grens/gren_mirv.png", false, true);
+	sb_grens[5] = Draw_CachePicSafe("textures/grens/gren_napalm.png", false, true);
+	sb_grens[6] = Draw_CachePicSafe("textures/grens/gren_flare.png", false, true);
+	sb_grens[7] = Draw_CachePicSafe("textures/grens/gren_gas.png", false, true);
+	sb_grens[8] = Draw_CachePicSafe("textures/grens/gren_emp.png", false, true);
+	sb_grens[9] = Draw_CachePicSafe("textures/grens/gren_flash.png", false, true);
 
 	sb_face_invis = Draw_CacheWadPic("face_invis", WADPIC_FACE_INVIS);
 	sb_face_invuln = Draw_CacheWadPic("face_invul2", WADPIC_FACE_INVUL2);

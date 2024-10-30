@@ -77,6 +77,7 @@ void Frags_HudInit(void);
 void Tracking_HudInit(void);
 void CenterPrint_HudInit(void);
 void Qtv_HudInit(void);
+void TF_HudInit(void);
 
 hud_t *hud_netgraph = NULL;
 
@@ -1011,6 +1012,7 @@ void CommonDraw_Init(void)
 	Tracking_HudInit();
 	CenterPrint_HudInit();
 	Qtv_HudInit();
+	TF_HudInit();
 }
 
 const char* HUD_FirstTeam(void)

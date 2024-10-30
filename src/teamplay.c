@@ -889,6 +889,35 @@ char* Macro_Team2(void)
 	return buffer;
 }
 
+char* Macro_numgren1(void)
+{
+	snprintf(macro_buf, sizeof(macro_buf), "%i", cl.stats[STAT_NUMGREN1]);
+	return macro_buf;
+}
+
+char* Macro_numgren2(void)
+{
+	snprintf(macro_buf, sizeof(macro_buf), "%i", cl.stats[STAT_NUMGREN2]);
+	return macro_buf;
+}
+
+char* Macro_tpgren1(void)
+{
+	snprintf(macro_buf, sizeof(macro_buf), "%i", cl.stats[STAT_TPGREN1]);
+	return macro_buf;
+}
+char* Macro_tpgren2(void)
+{
+	snprintf(macro_buf, sizeof(macro_buf), "%i", cl.stats[STAT_TPGREN2]);
+	return macro_buf;
+}
+
+char* Macro_currentclip(void)
+{
+	snprintf(macro_buf, sizeof(macro_buf), "%i", cl.stats[STAT_CLIP]);
+	return macro_buf;
+}
+
 char *Macro_MyStatus_LED(void)
 {
 	int count;
@@ -1245,6 +1274,12 @@ void TP_AddMacros(void)
 
 	Cmd_AddMacro(macro_team1, Macro_Team1);
 	Cmd_AddMacro(macro_team2, Macro_Team2);
+
+	Cmd_AddMacro(macro_numgren1, Macro_numgren1);
+	Cmd_AddMacro(macro_numgren2, Macro_numgren2);
+	Cmd_AddMacro(macro_tpgren1, Macro_tpgren1);
+	Cmd_AddMacro(macro_tpgren2, Macro_tpgren2);
+	Cmd_AddMacro(macro_currentclip, Macro_currentclip);
 }
 
 /********************** MACRO/FUNCHAR/WHITE TEXT PARSING **********************/

@@ -102,6 +102,11 @@ typedef enum
 #define STAT_VIEWHEIGHT         16		// Z_EXT_VIEWHEIGHT protocol extension
 #define STAT_TIME               17		// Z_EXT_TIME extension
 #define STAT_MATCHSTARTTIME     18		// Server should send this as msec (int)
+#define STAT_NUMGREN1 					20
+#define STAT_NUMGREN2 					21
+#define STAT_TPGREN1 						22
+#define STAT_TPGREN2 						23
+#define STAT_CLIP 							24
 
 // item flags
 #define	IT_SHOTGUN              1
