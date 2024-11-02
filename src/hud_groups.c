@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ============================================================================0
 // Groups
 // ============================================================================0
-#define HUD_NUM_GROUPS 9
+#define HUD_NUM_GROUPS 19
 #define HUD_GROUP_SCALEMODE_TILE		1
 #define HUD_GROUP_SCALEMODE_STRETCH		2
 #define HUD_GROUP_SCALEMODE_GROW		3
@@ -202,113 +202,22 @@ static void SCR_HUD_Groups_Draw(hud_t *hud)
 
 void Groups_HudInit(void)
 {
-	// groups
-	HUD_Register(
-		"group1", NULL, "Group element.",
-		HUD_NO_GROW, ca_disconnected, 0, SCR_HUD_Groups_Draw,
-		"0", "screen", "left", "top", "0", "0", ".5", "0 0 0", NULL,
-		"name", "group1",
-		"width", "64",
-		"height", "64",
-		"picture", "",
-		"pic_alpha", "1.0",
-		"pic_scalemode", "0",
-		NULL
-	);
-	HUD_Register(
-		"group2", NULL, "Group element.",
-		HUD_NO_GROW, ca_disconnected, 0, SCR_HUD_Groups_Draw,
-		"0", "screen", "center", "top", "0", "0", ".5", "0 0 0", NULL,
-		"name", "group2",
-		"width", "64",
-		"height", "64",
-		"picture", "",
-		"pic_alpha", "1.0",
-		"pic_scalemode", "0",
-		NULL
-	);
-	HUD_Register(
-		"group3", NULL, "Group element.",
-		HUD_NO_GROW, ca_disconnected, 0, SCR_HUD_Groups_Draw,
-		"0", "screen", "right", "top", "0", "0", ".5", "0 0 0", NULL,
-		"name", "group3",
-		"width", "64",
-		"height", "64",
-		"picture", "",
-		"pic_alpha", "1.0",
-		"pic_scalemode", "0",
-		NULL
-	);
-	HUD_Register(
-		"group4", NULL, "Group element.",
-		HUD_NO_GROW, ca_disconnected, 0, SCR_HUD_Groups_Draw,
-		"0", "screen", "left", "center", "0", "0", ".5", "0 0 0", NULL,
-		"name", "group4",
-		"width", "64",
-		"height", "64",
-		"picture", "",
-		"pic_alpha", "1.0",
-		"pic_scalemode", "0",
-		NULL
-	);
-	HUD_Register(
-		"group5", NULL, "Group element.",
-		HUD_NO_GROW, ca_disconnected, 0, SCR_HUD_Groups_Draw,
-		"0", "screen", "center", "center", "0", "0", ".5", "0 0 0", NULL,
-		"name", "group5",
-		"width", "64",
-		"height", "64",
-		"picture", "",
-		"pic_alpha", "1.0",
-		"pic_scalemode", "0",
-		NULL
-	);
-	HUD_Register(
-		"group6", NULL, "Group element.",
-		HUD_NO_GROW, ca_disconnected, 0, SCR_HUD_Groups_Draw,
-		"0", "screen", "right", "center", "0", "0", ".5", "0 0 0", NULL,
-		"name", "group6",
-		"width", "64",
-		"height", "64",
-		"picture", "",
-		"pic_alpha", "1.0",
-		"pic_scalemode", "0",
-		NULL
-	);
-	HUD_Register(
-		"group7", NULL, "Group element.",
-		HUD_NO_GROW, ca_disconnected, 0, SCR_HUD_Groups_Draw,
-		"0", "screen", "left", "bottom", "0", "0", ".5", "0 0 0", NULL,
-		"name", "group7",
-		"width", "64",
-		"height", "64",
-		"picture", "",
-		"pic_alpha", "1.0",
-		"pic_scalemode", "0",
-		NULL
-	);
-	HUD_Register(
-		"group8", NULL, "Group element.",
-		HUD_NO_GROW, ca_disconnected, 0, SCR_HUD_Groups_Draw,
-		"0", "screen", "center", "bottom", "0", "0", ".5", "0 0 0", NULL,
-		"name", "group8",
-		"width", "64",
-		"height", "64",
-		"picture", "",
-		"pic_alpha", "1.0",
-		"pic_scalemode", "0",
-		NULL
-	);
-	HUD_Register(
-		"group9", NULL, "Group element.",
-		HUD_NO_GROW, ca_disconnected, 0, SCR_HUD_Groups_Draw,
-		"0", "screen", "right", "bottom", "0", "0", ".5", "0 0 0", NULL,
-		"name", "group9",
-		"width", "64",
-		"height", "64",
-		"picture", "",
-		"pic_alpha", "1.0",
-		"pic_scalemode", "0",
-		NULL
-	);
+	int i;
+	char groupname[16];
+	for (i = 1; i <= HUD_NUM_GROUPS; i++) {
+		groupname[0] = '\0';
+		snprintf(groupname, sizeof(groupname), "group%d", i);
+		HUD_Register(
+			groupname, NULL, "Group element.",
+			HUD_NO_GROW, ca_disconnected, 0, SCR_HUD_Groups_Draw,
+			"0", "screen", "left", "top", "0", "0", ".5", "0 0 0", NULL,
+			"name", groupname,
+			"width", "64",
+			"height", "64",
+			"picture", "",
+			"pic_alpha", "1.0",
+			"pic_scalemode", "0",
+			NULL
+		);
+	}
 }

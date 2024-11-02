@@ -465,7 +465,7 @@ static void CL_Parse_TE_EXPLOSION(vec3_t pos)
 	else {
 		// sprite and particles
 		if (amf_part_explosion.value)
-			VXExplosion(pos);
+			Classic_ParticleExplosion(pos);
 		else {
 			R_ParticleExplosion(pos); // Normal explosion
 		}

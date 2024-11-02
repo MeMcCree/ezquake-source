@@ -22,6 +22,237 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "hud_common.h"
 #include "vx_stuff.h"
 
+#define TFSTATE_INFECTED                1<<4
+#define TFSTATE_BURNING                 1<<9
+#define TFSTATE_TRANQUILISED            1<<15
+
+#define SENTRY_HEALTH				0
+#define SENTRY_LVL					1
+#define SENTRY_AMMO_SHELLS  2
+#define SENTRY_AMMO_ROCKETS 3
+
+#define DISP_HEALTH				0
+#define DISP_AMMO_SHELLS  1
+#define DISP_AMMO_ROCKETS 2
+#define DISP_AMMO_NAILS		3
+#define DISP_AMMO_CELLS		4
+#define DISP_AMMO_ARMOR		5
+
+static void SCR_HUD_DrawSentryStat(hud_t* hud, int type)
+{
+	static cvar_t* scale = NULL, * style, * digits, * align, * proportional;
+	static int value;
+	if (scale == NULL) {
+		// first time called
+		scale = HUD_FindVar(hud, "scale");
+		style = HUD_FindVar(hud, "style");
+		digits = HUD_FindVar(hud, "digits");
+		align = HUD_FindVar(hud, "align");
+		proportional = HUD_FindVar(hud, "proportional");
+	}
+
+	uint32_t sentry = cl.stats[STAT_SENTRY];
+	if (cl.spectator != cl.autocam || !(sentry & 1))
+		return;
+	switch (type) {
+	case SENTRY_LVL:					value = (sentry >> 1) & ((1u << 2) - 1); break;
+	case SENTRY_HEALTH:				value = (sentry >> 3) & ((1u << 9) - 1); break;
+	case SENTRY_AMMO_SHELLS:	value = (sentry >> 12) & ((1u << 8) - 1); break;
+	case SENTRY_AMMO_ROCKETS: value = (sentry >> 20) & ((1u << 6) - 1); break;
+	}
+	SCR_HUD_DrawNum(hud, value, 0, scale->value, style->value, digits->value, align->string, proportional->integer);
+}
+
+static void SCR_HUD_DrawDispenserStat(hud_t* hud, int type)
+{
+	static cvar_t* scale = NULL, * style, * digits, * align, * proportional;
+	static int value;
+	if (scale == NULL) {
+		// first time called
+		scale = HUD_FindVar(hud, "scale");
+		style = HUD_FindVar(hud, "style");
+		digits = HUD_FindVar(hud, "digits");
+		align = HUD_FindVar(hud, "align");
+		proportional = HUD_FindVar(hud, "proportional");
+	}
+
+	uint32_t dispenser = cl.stats[STAT_DISP];
+	uint32_t dispenser_add = cl.stats[STAT_DISPADD];
+	if (cl.spectator != cl.autocam || !(dispenser & 1))
+		return;
+	switch (type) {
+	case DISP_HEALTH:				value = (dispenser >> 1) & ((1u << 8) - 1); break;
+	case DISP_AMMO_SHELLS:	value = (dispenser >> 9) & ((1u << 9) - 1); break;
+	case DISP_AMMO_ROCKETS: value = (dispenser >> 18) & ((1u << 10) - 1); break;
+	case DISP_AMMO_NAILS:		value = (dispenser_add >> 0) & ((1u << 9) - 1); break;
+	case DISP_AMMO_CELLS:		value = (dispenser_add >> 9) & ((1u << 9) - 1); break;
+	case DISP_AMMO_ARMOR:		value = (dispenser_add >> 18) & ((1u << 9) - 1); break;
+	}
+	SCR_HUD_DrawNum(hud, value, 0, scale->value, style->value, digits->value, align->string, proportional->integer);
+}
+
+static void SCR_HUD_DrawSentryHealth(hud_t* hud) { SCR_HUD_DrawSentryStat(hud, SENTRY_HEALTH); }
+static void SCR_HUD_DrawSentryLvl(hud_t* hud) { SCR_HUD_DrawSentryStat(hud, SENTRY_LVL); }
+static void SCR_HUD_DrawSentryAmmoShells(hud_t* hud) { SCR_HUD_DrawSentryStat(hud, SENTRY_AMMO_SHELLS); }
+static void SCR_HUD_DrawSentryAmmoRockets(hud_t* hud) { SCR_HUD_DrawSentryStat(hud, SENTRY_AMMO_ROCKETS); }
+
+static void SCR_HUD_DrawDispHealth(hud_t* hud) { SCR_HUD_DrawDispenserStat(hud, DISP_HEALTH); }
+static void SCR_HUD_DrawDispAmmoShells(hud_t* hud) { SCR_HUD_DrawDispenserStat(hud, DISP_AMMO_SHELLS); }
+static void SCR_HUD_DrawDispAmmoNails(hud_t* hud) { SCR_HUD_DrawDispenserStat(hud, DISP_AMMO_NAILS); }
+static void SCR_HUD_DrawDispAmmoRockets(hud_t* hud) { SCR_HUD_DrawDispenserStat(hud, DISP_AMMO_ROCKETS); }
+static void SCR_HUD_DrawDispAmmoCells(hud_t* hud) { SCR_HUD_DrawDispenserStat(hud, DISP_AMMO_CELLS); }
+static void SCR_HUD_DrawDispAmmoArmor(hud_t* hud) { SCR_HUD_DrawDispenserStat(hud, DISP_AMMO_ARMOR); }
+
+static void SCR_HUD_DrawSentryStatus(hud_t* hud)
+{
+	static cvar_t* scale = NULL, * big, * align, * proportional;
+	char t[128] = { 0 };
+	if (scale == NULL) {
+		// first time called
+		big = HUD_FindVar(hud, "big");
+		scale = HUD_FindVar(hud, "scale");
+		align = HUD_FindVar(hud, "align");
+		proportional = HUD_FindVar(hud, "proportional");
+	}
+	uint32_t sentry = cl.stats[STAT_SENTRY];
+	if (cl.spectator != cl.autocam || !(sentry & 1))
+		return;
+	snprintf(t, sizeof(t), "Sentry lvl%d %d hp\rShells: %d\rRockets: %d", (sentry >> 1) & ((1u << 2) - 1), (sentry >> 3) & ((1u << 9) - 1), (sentry >> 12) & ((1u << 8) - 1), (sentry >> 20) & ((1u << 6) - 1));
+	SCR_HUD_MultiLineString(hud, t, big->value, align->value, scale->value, proportional->value);
+}
+
+static void SCR_HUD_DrawDispenserStatus(hud_t* hud)
+{
+	static cvar_t* scale = NULL, * big, * align, * proportional;
+	char t[128] = { 0 };
+	if (scale == NULL) {
+		// first time called
+		big = HUD_FindVar(hud, "big");
+		scale = HUD_FindVar(hud, "scale");
+		align = HUD_FindVar(hud, "align");
+		proportional = HUD_FindVar(hud, "proportional");
+	}
+	uint32_t dispenser = cl.stats[STAT_DISP];
+	uint32_t dispenser_add = cl.stats[STAT_DISPADD];
+	if (cl.spectator != cl.autocam || !(dispenser & 1))
+		return;
+	snprintf(t, sizeof(t), "Dispenser %d hp\rShells: %d\rNails: %d\rRockets: %d\rCells: %d\rArmor: %d",
+		(dispenser >> 1) & ((1u << 8) - 1),
+		(dispenser >> 9) & ((1u << 9) - 1),
+		(dispenser >> 18) & ((1u << 10) - 1),
+		(dispenser_add >> 0) & ((1u << 9) - 1),
+		(dispenser_add >> 9) & ((1u << 9) - 1),
+		(dispenser_add >> 18) & ((1u << 9) - 1));
+	SCR_HUD_MultiLineString(hud, t, big->value, align->value, scale->value, proportional->value);
+}
+
+void SCR_HUD_DrawSentryIcon(hud_t* hud)
+{
+	extern mpic_t* sb_sentry[3];
+	static cvar_t* scale = NULL;
+	uint32_t sentry;
+	uint32_t lvl;
+	int   x, y;
+
+	if (scale == NULL) {
+		// first time called
+		scale = HUD_FindVar(hud, "scale");
+	}
+	sentry = cl.stats[STAT_SENTRY];
+	lvl = (sentry >> 1) & ((1u << 2) - 1);
+
+	float scaleval = max(scale->value, 0.01);
+
+	if (cl.spectator == cl.autocam && sentry & 1) {
+		if (sb_sentry[lvl - 1] == NULL) return;
+		if (!HUD_PrepareDraw(hud, sb_sentry[lvl - 1]->width * scaleval, sb_sentry[lvl - 1]->width * scaleval, &x, &y))
+			return;
+
+		Draw_SPic(x, y, sb_sentry[lvl - 1], scaleval);
+	}
+}
+
+void SCR_HUD_DrawDispenserIcon(hud_t* hud)
+{
+	extern mpic_t* sb_disp;
+	static cvar_t* scale = NULL;
+	uint32_t disp;
+	int   x, y;
+
+	if (scale == NULL) {
+		// first time called
+		scale = HUD_FindVar(hud, "scale");
+	}
+	disp = cl.stats[STAT_DISP];
+
+	float scaleval = max(scale->value, 0.01);
+
+	if (cl.spectator == cl.autocam && disp & 1) {
+		if (sb_disp == NULL) return;
+		if (!HUD_PrepareDraw(hud, sb_disp->width * scaleval, sb_disp->height * scaleval, &x, &y))
+			return;
+
+		Draw_SPic(x, y, sb_disp, scaleval);
+	}
+}
+
+void SCR_HUD_DrawDebuffIcons(hud_t* hud)
+{
+	extern mpic_t* sb_debuffs[5];
+	static cvar_t* scale = NULL, *vertical, *spacing;
+	int   x, y;
+
+	if (scale == NULL) {
+		// first time called
+		scale = HUD_FindVar(hud, "scale");
+		vertical = HUD_FindVar(hud, "vertical");
+		spacing = HUD_FindVar(hud, "spacing");
+	}
+
+	float scaleval = max(scale->value, 0.01);
+
+	if (cl.spectator == cl.autocam) {
+		if (!HUD_PrepareDraw(hud, sb_debuffs[0]->width * scaleval, sb_debuffs[0]->height * scaleval, &x, &y))
+			return;
+		if (sb_debuffs[0] != NULL && cl.stats[STAT_TFSTATE] & TFSTATE_BURNING) {
+			// Fire
+			Draw_SPic(x, y, sb_debuffs[0], scaleval);
+			if (vertical->value)
+				y += sb_debuffs[0]->height * scaleval + spacing->value;
+			else
+				x += sb_debuffs[0]->width * scaleval + spacing->value;
+		}
+		if (sb_debuffs[1] != NULL && cl.stats[STAT_TFSTATE] & TFSTATE_INFECTED) {
+			// Infected
+			Draw_SPic(x, y, sb_debuffs[1], scaleval);
+			if (vertical->value)
+				y += sb_debuffs[1]->height * scaleval + spacing->value;
+			else
+				x += sb_debuffs[1]->width * scaleval + spacing->value;
+		}
+		if (sb_debuffs[2] != NULL && cl.stats[STAT_TFSTATE] & TFSTATE_TRANQUILISED) {
+			// Tranquilized
+			Draw_SPic(x, y, sb_debuffs[2], scaleval);
+			if (vertical->value)
+				y += sb_debuffs[1]->height * scaleval + spacing->value;
+			else
+				x += sb_debuffs[1]->width * scaleval + spacing->value;
+		}
+		if (sb_debuffs[3] != NULL && concussioned) {
+			// Conced
+			Draw_SPic(x, y, sb_debuffs[3], scaleval);
+			if (vertical->value)
+				y += sb_debuffs[1]->height * scaleval + spacing->value;
+			else
+				x += sb_debuffs[1]->width * scaleval + spacing->value;
+		}
+		if (sb_debuffs[4] != NULL && flashed) {
+			// Flashed
+			Draw_SPic(x, y, sb_debuffs[4], scaleval);
+		}
+	}
+}
+
 static void SCR_HUD_DrawClip(hud_t* hud)
 {
 	static cvar_t* scale = NULL, * style, * digits, * align, * proportional;
@@ -82,17 +313,15 @@ static void SCR_HUD_DrawNumGren2(hud_t* hud)
 void SCR_HUD_DrawGrenIcon(hud_t* hud, int num, float scale)
 {
 	extern mpic_t* sb_grens[11];
-	int   x, y, width, height;
+	int   x, y;
 
 	scale = max(scale, 0.01);
 
-	width = height = 8 * scale;
-
 	if (cl.spectator == cl.autocam && num != 0) {
-		if (!HUD_PrepareDraw(hud, width, height, &x, &y) || num == 0)
-			return;
-		
 		if (sb_grens[num] == NULL) return;
+		if (!HUD_PrepareDraw(hud, sb_grens[num]->width * scale, sb_grens[num]->height * scale, &x, &y) || num == 0)
+			return;
+
 		Draw_SPic(x, y, sb_grens[num], scale);
 	}
 }
@@ -327,6 +556,149 @@ static void SCR_HUD_DrawScoreRed(hud_t* hud)
 
 void TF_HudInit(void)
 {
+	HUD_Register("debufficons", NULL, "TF debuff icons",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawDebuffIcons,
+		"0", "ibar", "left", "top", "0", "0", "0", "0 0 0", NULL,
+		"scale", "0.25",
+		"proportional", "0",
+		"vertical", "0",
+		"spacing", "8",
+		NULL);
+
+	HUD_Register(
+		"sentryhealth", NULL, "",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawSentryHealth,
+		"1", "face", "after", "center", "0", "0", "0", "0 0 0", NULL,
+		"style", "0",
+		"scale", "1",
+		"align", "right",
+		"digits", "3",
+		"proportional", "0",
+		NULL
+	);
+
+	HUD_Register(
+		"sentrylvl", NULL, "",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawSentryLvl,
+		"1", "face", "after", "center", "0", "0", "0", "0 0 0", NULL,
+		"style", "0",
+		"scale", "1",
+		"align", "right",
+		"digits", "3",
+		"proportional", "0",
+		NULL
+	);
+
+	HUD_Register(
+		"sentryshells", NULL, "",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawSentryAmmoShells,
+		"1", "face", "after", "center", "0", "0", "0", "0 0 0", NULL,
+		"style", "0",
+		"scale", "1",
+		"align", "right",
+		"digits", "3",
+		"proportional", "0",
+		NULL
+	);
+
+	HUD_Register(
+		"sentryrockets", NULL, "",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawSentryAmmoRockets,
+		"1", "face", "after", "center", "0", "0", "0", "0 0 0", NULL,
+		"style", "0",
+		"scale", "1",
+		"align", "right",
+		"digits", "3",
+		"proportional", "0",
+		NULL
+	);
+
+	HUD_Register(
+		"disphealth", NULL, "",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawDispHealth,
+		"1", "face", "after", "center", "0", "0", "0", "0 0 0", NULL,
+		"style", "0",
+		"scale", "1",
+		"align", "right",
+		"digits", "3",
+		"proportional", "0",
+		NULL
+	);
+
+	HUD_Register(
+		"dispshells", NULL, "",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawDispAmmoShells,
+		"1", "face", "after", "center", "0", "0", "0", "0 0 0", NULL,
+		"style", "0",
+		"scale", "1",
+		"align", "right",
+		"digits", "3",
+		"proportional", "0",
+		NULL
+	);
+
+	HUD_Register(
+		"dispnails", NULL, "",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawDispAmmoNails,
+		"1", "face", "after", "center", "0", "0", "0", "0 0 0", NULL,
+		"style", "0",
+		"scale", "1",
+		"align", "right",
+		"digits", "3",
+		"proportional", "0",
+		NULL
+	);
+
+	HUD_Register(
+		"disprockets", NULL, "",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawDispAmmoRockets,
+		"1", "face", "after", "center", "0", "0", "0", "0 0 0", NULL,
+		"style", "0",
+		"scale", "1",
+		"align", "right",
+		"digits", "3",
+		"proportional", "0",
+		NULL
+	);
+
+	HUD_Register(
+		"dispcells", NULL, "",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawDispAmmoCells,
+		"1", "face", "after", "center", "0", "0", "0", "0 0 0", NULL,
+		"style", "0",
+		"scale", "1",
+		"align", "right",
+		"digits", "3",
+		"proportional", "0",
+		NULL
+	);
+
+	HUD_Register(
+		"disparmor", NULL, "",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawDispAmmoArmor,
+		"1", "face", "after", "center", "0", "0", "0", "0 0 0", NULL,
+		"style", "0",
+		"scale", "1",
+		"align", "right",
+		"digits", "3",
+		"proportional", "0",
+		NULL
+	);
+
+	HUD_Register("sentryicon", NULL, "TF sentry icon",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawSentryIcon,
+		"0", "ibar", "left", "top", "0", "0", "0", "0 0 0", NULL,
+		"scale", "0.25",
+		"proportional", "0",
+		NULL);
+
+	HUD_Register("dispicon", NULL, "TF dispenser icon",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawDispenserIcon,
+		"0", "ibar", "left", "top", "0", "0", "0", "0 0 0", NULL,
+		"scale", "0.25",
+		"proportional", "0",
+		NULL);
+
 	HUD_Register(
 		"scoreblue", NULL, "Shows current game time (mm:ss).",
 		HUD_PLUSMINUS, ca_active, 8, SCR_HUD_DrawScoreBlue,
@@ -336,7 +708,7 @@ void TF_HudInit(void)
 		"align", "right",
 		"digits", "3",
 		"proportional", "0",
-		"flags", "0",
+		"flags", "1",
 		NULL
 	);
 
@@ -349,7 +721,7 @@ void TF_HudInit(void)
 		"align", "right",
 		"digits", "3",
 		"proportional", "0",
-		"flags", "0",
+		"flags", "1",
 		NULL
 	);
 
@@ -407,20 +779,14 @@ void TF_HudInit(void)
 	HUD_Register("tpgren1", NULL, "Grenade type 1 icon",
 		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawGrenIcon1,
 		"0", "ibar", "left", "top", "0", "0", "0", "0 0 0", NULL,
-		"style", "0",
 		"scale", "0.25",
-		"align", "right",
-		"digits", "3",
 		"proportional", "0",
 		NULL);
 
 	HUD_Register("tpgren2", NULL, "Grenade type 2 icon",
 		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawGrenIcon2,
 		"0", "ibar", "left", "top", "0", "0", "0", "0 0 0", NULL,
-		"style", "0",
 		"scale", "0.25",
-		"align", "right",
-		"digits", "3",
 		"proportional", "0",
 		NULL);
 }

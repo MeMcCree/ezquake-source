@@ -103,7 +103,11 @@ mpic_t		*sb_ammo[4];
 mpic_t		*sb_sigil[4];
 mpic_t		*sb_armor[3];
 mpic_t		*sb_items[32];
+
 mpic_t* sb_grens[11];
+mpic_t* sb_sentry[3];
+mpic_t* sb_disp;
+mpic_t* sb_debuffs[5];
 
 mpic_t	*sb_faces[5][2];		// 0 is dead, 1-4 are alive
 // 0 is static, 1 is temporary animation
@@ -282,6 +286,17 @@ void Sbar_Init(void)
 	sb_grens[7] = Draw_CachePicSafe("textures/grens/gren_gas.png", false, true);
 	sb_grens[8] = Draw_CachePicSafe("textures/grens/gren_emp.png", false, true);
 	sb_grens[9] = Draw_CachePicSafe("textures/grens/gren_flash.png", false, true);
+
+	sb_sentry[0] = Draw_CachePicSafe("textures/icons/sg1.png", false, true);
+	sb_sentry[1] = Draw_CachePicSafe("textures/icons/sg2.png", false, true);
+	sb_sentry[2] = Draw_CachePicSafe("textures/icons/sg3.png", false, true);
+	sb_disp = Draw_CachePicSafe("textures/icons/disp.png", false, true);
+
+	sb_debuffs[0] = Draw_CachePicSafe("textures/icons/onfire.png", false, true);
+	sb_debuffs[1] = Draw_CachePicSafe("textures/icons/infected.png", false, true);
+	sb_debuffs[2] = Draw_CachePicSafe("textures/icons/tranquilized.png", false, true);
+	sb_debuffs[3] = Draw_CachePicSafe("textures/icons/conced.png", false, true);
+	sb_debuffs[4] = Draw_CachePicSafe("textures/icons/flashed.png", false, true);
 
 	sb_face_invis = Draw_CacheWadPic("face_invis", WADPIC_FACE_INVIS);
 	sb_face_invuln = Draw_CacheWadPic("face_invul2", WADPIC_FACE_INVUL2);
