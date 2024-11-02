@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "glm_texture_arrays.h"
 #include "r_sprite3d.h"
 #include "r_texture.h"
-#include "r_chaticons.h"
+#include "r_tficons.h"
 #include "r_state.h"
 #include "r_matrix.h"
 
@@ -38,7 +38,7 @@ typedef struct ci_player_s {
 	int			flags;
 	float       distance;
 
-	player_info_t *player;
+	player_info_t* player;
 } ci_player_t;
 
 typedef enum {
@@ -85,7 +85,7 @@ static qbool ci_initialized = false;
 
 // FIXME: Almost duplicate of QMB_LoadTextureSubImage, extracting sprites from an atlas
 //        This version works on different enumeration, and doesn't double-up for pre-multiplied alpha
-static void R_LoadChatIconTextureSubImage(ci_tex_t tex, const char* id, const byte* pixels, byte* temp_buffer, int full_width, int full_height, int texIndex, int components, int sub_x, int sub_y, int sub_x2, int sub_y2)
+static void R_LoadTfIconTextureSubImage(ci_tex_t tex, const char* id, const byte* pixels, byte* temp_buffer, int full_width, int full_height, int texIndex, int components, int sub_x, int sub_y, int sub_x2, int sub_y2)
 {
 	const int mode = TEX_ALPHA | TEX_COMPLAIN | TEX_NOSCALE;// | TEX_MIPMAP;
 	texture_ref tex_ref;
@@ -109,7 +109,7 @@ static void R_LoadChatIconTextureSubImage(ci_tex_t tex, const char* id, const by
 	ADD_CICON_TEXTURE(tex, tex_ref, 0, 1, 0, 0, FONT_SIZE, FONT_SIZE);
 }
 
-static void R_DrawChatIconBillboard(sprite3d_batch_id batch, ci_texture_t* _ptex, ci_player_t* _p, vec3_t _coord[4])
+static void R_DrawTfIconBillboard(sprite3d_batch_id batch, ci_texture_t* _ptex, ci_player_t* _p, vec3_t _coord[4])
 {
 	float coordinates[4][4];
 	r_sprite3d_vert_t* vert;
@@ -132,10 +132,10 @@ static void R_DrawChatIconBillboard(sprite3d_batch_id batch, ci_texture_t* _ptex
 	}
 }
 
-static int CmpCI_Order(const void *p1, const void *p2)
+static int CmpCI_Order(const void* p1, const void* p2)
 {
-	const ci_player_t	*a1 = (ci_player_t *)p1;
-	const ci_player_t	*a2 = (ci_player_t *)p2;
+	const ci_player_t* a1 = (ci_player_t*)p1;
+	const ci_player_t* a2 = (ci_player_t*)p2;
 	int l1 = a1->distance;
 	int l2 = a2->distance;
 
@@ -147,19 +147,15 @@ static int CmpCI_Order(const void *p1, const void *p2)
 	return 0;
 }
 
-void R_SetupChatIcons(void)
+void R_SetupTfIcons(void)
 {
 	int j, tracknum = -1;
-	player_state_t *state;
-	player_info_t *info;
-	ci_player_t *id;
-	centity_t *cent;
+	player_state_t* state;
+	player_info_t* info;
+	ci_player_t* id;
+	centity_t* cent;
 
 	ci_count = 0;
-
-	if (!bound(0, r_chaticons_alpha.value, 1)) {
-		return;
-	}
 
 	if (cls.state != ca_active || !cl.validsequence || cl.intermission) {
 		return;
@@ -214,11 +210,11 @@ void R_SetupChatIcons(void)
 
 	if (ci_count) {
 		// sort icons so we draw most far to you first
-		qsort((void *)ci_clients, ci_count, sizeof(ci_clients[0]), CmpCI_Order);
+		qsort((void*)ci_clients, ci_count, sizeof(ci_clients[0]), CmpCI_Order);
 	}
 }
 
-void R_InitChatIcons(void)
+void R_InitTfIcons(void)
 {
 	int texmode = TEX_ALPHA | TEX_COMPLAIN | TEX_NOSCALE | TEX_MIPMAP;
 
@@ -249,7 +245,7 @@ void R_DrawChatIcons(void)
 {
 	int	i, flags;
 	vec3_t billboard[4], billboard2[4], vright_tmp;
-	ci_player_t *p;
+	ci_player_t* p;
 
 	if (!ci_initialized) {
 		return;

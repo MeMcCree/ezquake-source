@@ -93,7 +93,16 @@ static const char* batch_type_names[] = {
 	"CORONATEX_EXPLOSIONFLASH7",
 	"CHATICON_AFK_CHAT",
 	"CHATICON_CHAT",
-	"CHATICON_AFK"
+	"CHATICON_AFK",
+	"GREN_NORMAL",
+	"GREN_CONCUSSION",
+	"GREN_EMP",
+	"GREN_FLASH",
+	"GREN_GAS",
+	"GREN_MIRV",
+	"GREN_NAIL",
+	"GREN_NAPALM",
+	"PASSFLAG",
 };
 
 #ifdef C_ASSERT
@@ -170,6 +179,15 @@ sprite_vertpool_id batch_to_vertpool[] = {
 	sprite_vertpool_game_annotations, // SPRITE3D_CHATICON_AFK_CHAT,
 	sprite_vertpool_game_annotations, // SPRITE3D_CHATICON_CHAT,
 	sprite_vertpool_game_annotations, // SPRITE3D_CHATICON_AFK
+	sprite_vertpool_game_annotations, // SPRITE3D_GREN_NORMAL
+	sprite_vertpool_game_annotations, // SPRITE3D_GREN_CONCUSSION
+	sprite_vertpool_game_annotations, // SPRITE3D_GREN_EMP
+	sprite_vertpool_game_annotations, // SPRITE3D_GREN_FLASH
+	sprite_vertpool_game_annotations, // SPRITE3D_GREN_GAS
+	sprite_vertpool_game_annotations, // SPRITE3D_GREN_MIRV
+	sprite_vertpool_game_annotations, // SPRITE3D_GREN_NAIL
+	sprite_vertpool_game_annotations, // SPRITE3D_GREN_NAPALM
+	sprite_vertpool_game_annotations, // SPRITE3D_PASSFLAG
 };
 
 #ifdef C_ASSERT

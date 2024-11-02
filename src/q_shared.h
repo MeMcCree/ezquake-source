@@ -330,6 +330,15 @@ char *Q_wcs2str_malloc(const wchar *ws); // you must freed returned string after
 // used now by client code only, but may be used in future by server code too, so put here
 #define CIF_CHAT  (1<<0) /* set this flag if user in console, mm1, mm2 etc but not in game */
 #define CIF_AFK   (1<<1) /* set this flag if app lose focus, ie alt+tab */
+#define CIF_GREN_NORMAL				(1<<2)
+#define CIF_GREN_CONCUSSION		(1<<3)
+#define CIF_GREN_EMP					(1<<4)
+#define CIF_GREN_FLASH				(1<<5)
+#define CIF_GREN_GAS					(1<<6)
+#define CIF_GREN_MIRV					(1<<7)
+#define CIF_GREN_NAIL					(1<<8)
+#define CIF_GREN_NAPALM				(1<<9)
+#define CIF_PASSFLAG					(1<<10)
 
 //============================================================================
 

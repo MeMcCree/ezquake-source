@@ -4054,6 +4054,13 @@ void CL_ParseServerMessage (void)
 				cl.tftime = MSG_ReadLong();
 				break;
 			}
+			case svc_updateicons:
+			{
+				int j = MSG_ReadLong();
+				cl.players[j].tficon = MSG_ReadByte();
+				Con_DPrintf("[%d] = %d\n", j, cl.players[j].tficon);
+				break;
+			}
 		}
 
 		// cl_messages, update size

@@ -26,6 +26,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "r_state.h"
 #include "r_matrix.h"
 
+#define TFICON_GREN_NORMAL              1
+#define TFICON_GREN_CONCUSSION          2
+#define TFICON_GREN_NAIL                3
+#define TFICON_GREN_MIRV                4
+#define TFICON_GREN_NAPALM              5
+#define TFICON_GREN_GAS                 7
+#define TFICON_GREN_EMP                 8
+#define TFICON_GREN_FLASH               9
+#define TFICON_PASSFLAG                 10
+
 // Chat icons
 typedef byte col_t[4]; // FIXME: why 4?
 
@@ -36,6 +46,7 @@ typedef struct ci_player_s {
 	float		size;
 	byte		texindex;
 	int			flags;
+	int tficon;
 	float       distance;
 
 	player_info_t *player;
@@ -45,6 +56,16 @@ typedef enum {
 	citex_chat,
 	citex_afk,
 	citex_chat_afk,
+// TF texs
+	citex_gren_normal,
+	citex_gren_concussion,
+	citex_gren_emp,
+	citex_gren_flash,
+	citex_gren_gas,
+	citex_gren_mirv,
+	citex_gren_nail,
+	citex_gren_napalm,
+	citex_passflag,
 	num_citextures,
 } ci_tex_t;
 
@@ -181,7 +202,7 @@ void R_SetupChatIcons(void)
 			continue;
 		}
 
-		if (!info->chatflag) {
+		if (!info->chatflag && !info->tficon || info->tficon && strcmp(info->team, cl.players[cl.playernum].team)) {
 			continue; // user not chatting, so ignore
 		}
 
@@ -203,11 +224,23 @@ void R_SetupChatIcons(void)
 		}
 
 		id->size = 8; // scale baloon
-		id->rotangle = 5 * sin(2 * r_refdef2.time); // may be set to 0, if u dislike rolling
 		id->color[0] = id->color[1] = id->color[2] = id->color[3] = 255 * bound(0, r_chaticons_alpha.value, 1) * fade; // pre-multiplied alpha
+		id->rotangle = 5 * sin(2 * r_refdef2.time); // may be set to 0, if u dislike rolling
+		if (info->tficon) {
+			id->size = 6;
+			id->org[2] += 8;
+			id->color[0] = id->color[1] = id->color[2] = id->color[3] = 255;
+			if (info->tficon == TFICON_PASSFLAG) {
+				id->size = 10;
+				id->rotangle = 30 * sin(5 * r_refdef2.time); // may be set to 0, if u dislike rolling
+			} else {
+				id->rotangle = 0;
+			}
+		}
 
 		id->flags = info->chatflag & (CIF_CHAT | CIF_AFK); // get known flags
 		id->flags = (id->flags ? id->flags : CIF_CHAT); // use chat as default if we got some unknown "chat" value
+		id->tficon = info->tficon;
 
 		ci_count++;
 	}
@@ -226,6 +259,7 @@ void R_InitChatIcons(void)
 
 	{
 		int real_width, real_height;
+		int icon_width, icon_height;
 		byte* original;
 		byte* temp_buffer;
 
@@ -234,10 +268,21 @@ void R_InitChatIcons(void)
 			return;
 		}
 
+		icon_width = icon_height = real_width / 4;
 		temp_buffer = Q_malloc(real_width * real_height * 4);
-		R_LoadChatIconTextureSubImage(citex_chat, "ci:chat", original, temp_buffer, real_width, real_height, 0, 1, 0, 0, real_width / 4, real_height / 4);
-		R_LoadChatIconTextureSubImage(citex_afk, "ci:afk", original, temp_buffer, real_width, real_height, 0, 1, real_width / 4, 0, real_width / 2, real_height / 4);
-		R_LoadChatIconTextureSubImage(citex_chat_afk, "ci:chat-afk", original, temp_buffer, real_width, real_height, 0, 1, 0, 0, real_width / 2, real_height / 4);
+		R_LoadChatIconTextureSubImage(citex_chat, "ci:chat", original, temp_buffer, real_width, real_height, 0, 1, 0, 0, icon_width, icon_height);
+		R_LoadChatIconTextureSubImage(citex_afk, "ci:afk", original, temp_buffer, real_width, real_height, 0, 1, icon_width, 0, icon_width * 2, icon_height);
+		R_LoadChatIconTextureSubImage(citex_chat_afk, "ci:chat-afk", original, temp_buffer, real_width, real_height, 0, 1, 0, 0, icon_width * 2, icon_height);
+		R_LoadChatIconTextureSubImage(citex_gren_normal, "ci:gren_normal", original, temp_buffer, real_width, real_height, 0, 1,					icon_width*0, icon_height, icon_width*1, icon_height*2);
+		R_LoadChatIconTextureSubImage(citex_gren_concussion, "ci:gren_concussion", original, temp_buffer, real_width, real_height, 0, 1,	icon_width*1, icon_height, icon_width*2, icon_height*2);
+		R_LoadChatIconTextureSubImage(citex_gren_emp, "ci:gren_emp", original, temp_buffer, real_width, real_height, 0, 1,								icon_width*2, icon_height, icon_width*3, icon_height*2);
+		R_LoadChatIconTextureSubImage(citex_gren_flash, "ci:gren_flash", original, temp_buffer, real_width, real_height, 0, 1,				icon_width*3, icon_height, icon_width*4, icon_height*2);
+		R_LoadChatIconTextureSubImage(citex_gren_gas, "ci:gren_gas", original, temp_buffer, real_width, real_height, 0, 1,								icon_width*0, icon_height*2, icon_width*1, icon_height*3);
+		R_LoadChatIconTextureSubImage(citex_gren_mirv, "ci:gren_mirv", original, temp_buffer, real_width, real_height, 0, 1,							icon_width*1, icon_height*2, icon_width*2, icon_height*3);
+		R_LoadChatIconTextureSubImage(citex_gren_nail, "ci:gren_nail", original, temp_buffer, real_width, real_height, 0, 1,							icon_width*2, icon_height*2, icon_width*3, icon_height*3);
+		R_LoadChatIconTextureSubImage(citex_gren_napalm, "ci:gren_napalm", original, temp_buffer, real_width, real_height, 0, 1,					icon_width*3, icon_height*2, icon_width*4, icon_height*3);
+		R_LoadChatIconTextureSubImage(citex_passflag, "ci:gren_passflag", original, temp_buffer, real_width, real_height, 0, 1,						icon_width*0, icon_height*3, icon_width*1, icon_height*4);
+		
 		Q_free(temp_buffer);
 		Q_free(original);
 	}
@@ -273,10 +318,34 @@ void R_DrawChatIcons(void)
 	R_Sprite3DInitialiseBatch(SPRITE3D_CHATICON_AFK_CHAT, r_state_chaticon, TEXTURE_DETAILS(ci_textures[citex_chat_afk]), r_primitive_triangle_strip);
 	R_Sprite3DInitialiseBatch(SPRITE3D_CHATICON_AFK, r_state_chaticon, TEXTURE_DETAILS(ci_textures[citex_afk]), r_primitive_triangle_strip);
 	R_Sprite3DInitialiseBatch(SPRITE3D_CHATICON_CHAT, r_state_chaticon, TEXTURE_DETAILS(ci_textures[citex_chat]), r_primitive_triangle_strip);
+	R_Sprite3DInitialiseBatch(SPRITE3D_GREN_NORMAL, r_state_chaticon, TEXTURE_DETAILS(ci_textures[citex_gren_normal]), r_primitive_triangle_strip);
+	R_Sprite3DInitialiseBatch(SPRITE3D_GREN_CONCUSSION, r_state_chaticon, TEXTURE_DETAILS(ci_textures[citex_gren_concussion]), r_primitive_triangle_strip);
+	R_Sprite3DInitialiseBatch(SPRITE3D_GREN_EMP, r_state_chaticon, TEXTURE_DETAILS(ci_textures[citex_gren_emp]), r_primitive_triangle_strip);
+	R_Sprite3DInitialiseBatch(SPRITE3D_GREN_FLASH, r_state_chaticon, TEXTURE_DETAILS(ci_textures[citex_gren_flash]), r_primitive_triangle_strip);
+	R_Sprite3DInitialiseBatch(SPRITE3D_GREN_GAS, r_state_chaticon, TEXTURE_DETAILS(ci_textures[citex_gren_gas]), r_primitive_triangle_strip);
+	R_Sprite3DInitialiseBatch(SPRITE3D_GREN_MIRV, r_state_chaticon, TEXTURE_DETAILS(ci_textures[citex_gren_mirv]), r_primitive_triangle_strip);
+	R_Sprite3DInitialiseBatch(SPRITE3D_GREN_NAIL, r_state_chaticon, TEXTURE_DETAILS(ci_textures[citex_gren_nail]), r_primitive_triangle_strip);
+	R_Sprite3DInitialiseBatch(SPRITE3D_GREN_NAPALM, r_state_chaticon, TEXTURE_DETAILS(ci_textures[citex_gren_napalm]), r_primitive_triangle_strip);
+	R_Sprite3DInitialiseBatch(SPRITE3D_PASSFLAG, r_state_chaticon, TEXTURE_DETAILS(ci_textures[citex_passflag]), r_primitive_triangle_strip);
 
 	for (i = 0; i < ci_count; i++) {
 		p = &ci_clients[i];
 		flags = p->flags;
+
+		if (p->tficon) {
+			switch (p->tficon) {
+			case TFICON_GREN_NORMAL: R_DrawChatIconBillboard(SPRITE3D_GREN_NORMAL, &ci_textures[citex_gren_normal], p, billboard);  break;
+			case TFICON_GREN_CONCUSSION: R_DrawChatIconBillboard(SPRITE3D_GREN_CONCUSSION, &ci_textures[citex_gren_concussion], p, billboard);  break;
+			case TFICON_GREN_EMP: R_DrawChatIconBillboard(SPRITE3D_GREN_EMP, &ci_textures[citex_gren_emp], p, billboard);  break;
+			case TFICON_GREN_FLASH: R_DrawChatIconBillboard(SPRITE3D_GREN_FLASH, &ci_textures[citex_gren_flash], p, billboard);  break;
+			case TFICON_GREN_GAS: R_DrawChatIconBillboard(SPRITE3D_GREN_GAS, &ci_textures[citex_gren_gas], p, billboard);  break;
+			case TFICON_GREN_MIRV: R_DrawChatIconBillboard(SPRITE3D_GREN_MIRV, &ci_textures[citex_gren_mirv], p, billboard);  break;
+			case TFICON_GREN_NAIL: R_DrawChatIconBillboard(SPRITE3D_GREN_NAIL, &ci_textures[citex_gren_nail], p, billboard);  break;
+			case TFICON_GREN_NAPALM: R_DrawChatIconBillboard(SPRITE3D_GREN_NAPALM, &ci_textures[citex_gren_napalm], p, billboard);  break;
+			case TFICON_PASSFLAG: R_DrawChatIconBillboard(SPRITE3D_PASSFLAG, &ci_textures[citex_passflag], p, billboard);  break;
+			}
+			continue;
+		}
 
 		if ((flags & CIF_CHAT) && (flags & CIF_AFK)) {
 			R_DrawChatIconBillboard(SPRITE3D_CHATICON_AFK_CHAT, &ci_textures[citex_chat_afk], p, billboard2);

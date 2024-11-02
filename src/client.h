@@ -189,6 +189,7 @@ typedef struct player_info_s
 	// extracted from userinfo
 	int           chatflag;
 	gender_id     gender;
+	int tficon;
 } __attribute__((aligned(64))) player_info_t;
 
 
