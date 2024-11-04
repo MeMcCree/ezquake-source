@@ -130,7 +130,7 @@ static void R_LoadChatIconTextureSubImage(ci_tex_t tex, const char* id, const by
 	ADD_CICON_TEXTURE(tex, tex_ref, 0, 1, 0, 0, FONT_SIZE, FONT_SIZE);
 }
 
-static void R_DrawChatIconBillboard(sprite3d_batch_id batch, ci_texture_t* _ptex, ci_player_t* _p, vec3_t _coord[4])
+static void R_DrawChatIconBillboard(sprite3d_batch_id batch, ci_texture_t* _ptex, ci_player_t* _p, vec3_t _coord[4], int yoffset)
 {
 	float coordinates[4][4];
 	r_sprite3d_vert_t* vert;
@@ -138,6 +138,7 @@ static void R_DrawChatIconBillboard(sprite3d_batch_id batch, ci_texture_t* _ptex
 
 	for (i = 0; i < 4; ++i) {
 		VectorScale(_coord[i], _p->size, coordinates[i]);
+		coordinates[i][2] += yoffset;
 		if (_p->rotangle) {
 			R_RotateVector(coordinates[i], _p->rotangle, vpn[0], vpn[1], vpn[2]);
 		}
@@ -228,12 +229,13 @@ void R_SetupChatIcons(void)
 		id->rotangle = 5 * sin(2 * r_refdef2.time); // may be set to 0, if u dislike rolling
 		if (info->tficon) {
 			id->size = 6;
-			id->org[2] += 8;
 			id->color[0] = id->color[1] = id->color[2] = id->color[3] = 255;
 			if (info->tficon == TFICON_PASSFLAG) {
 				id->size = 10;
-				id->rotangle = 30 * sin(5 * r_refdef2.time); // may be set to 0, if u dislike rolling
+				id->org[2] -= 8;
+				id->rotangle = 45 * sin(14 * r_refdef2.time) * sin(0.75*r_refdef2.time); // may be set to 0, if u dislike rolling
 			} else {
+				id->org[2] += 8;
 				id->rotangle = 0;
 			}
 		}
@@ -334,27 +336,27 @@ void R_DrawChatIcons(void)
 
 		if (p->tficon) {
 			switch (p->tficon) {
-			case TFICON_GREN_NORMAL: R_DrawChatIconBillboard(SPRITE3D_GREN_NORMAL, &ci_textures[citex_gren_normal], p, billboard);  break;
-			case TFICON_GREN_CONCUSSION: R_DrawChatIconBillboard(SPRITE3D_GREN_CONCUSSION, &ci_textures[citex_gren_concussion], p, billboard);  break;
-			case TFICON_GREN_EMP: R_DrawChatIconBillboard(SPRITE3D_GREN_EMP, &ci_textures[citex_gren_emp], p, billboard);  break;
-			case TFICON_GREN_FLASH: R_DrawChatIconBillboard(SPRITE3D_GREN_FLASH, &ci_textures[citex_gren_flash], p, billboard);  break;
-			case TFICON_GREN_GAS: R_DrawChatIconBillboard(SPRITE3D_GREN_GAS, &ci_textures[citex_gren_gas], p, billboard);  break;
-			case TFICON_GREN_MIRV: R_DrawChatIconBillboard(SPRITE3D_GREN_MIRV, &ci_textures[citex_gren_mirv], p, billboard);  break;
-			case TFICON_GREN_NAIL: R_DrawChatIconBillboard(SPRITE3D_GREN_NAIL, &ci_textures[citex_gren_nail], p, billboard);  break;
-			case TFICON_GREN_NAPALM: R_DrawChatIconBillboard(SPRITE3D_GREN_NAPALM, &ci_textures[citex_gren_napalm], p, billboard);  break;
-			case TFICON_PASSFLAG: R_DrawChatIconBillboard(SPRITE3D_PASSFLAG, &ci_textures[citex_passflag], p, billboard);  break;
+			case TFICON_GREN_NORMAL: R_DrawChatIconBillboard(SPRITE3D_GREN_NORMAL, &ci_textures[citex_gren_normal], p, billboard, 0);  break;
+			case TFICON_GREN_CONCUSSION: R_DrawChatIconBillboard(SPRITE3D_GREN_CONCUSSION, &ci_textures[citex_gren_concussion], p, billboard, 0);  break;
+			case TFICON_GREN_EMP: R_DrawChatIconBillboard(SPRITE3D_GREN_EMP, &ci_textures[citex_gren_emp], p, billboard, 0);  break;
+			case TFICON_GREN_FLASH: R_DrawChatIconBillboard(SPRITE3D_GREN_FLASH, &ci_textures[citex_gren_flash], p, billboard, 0);  break;
+			case TFICON_GREN_GAS: R_DrawChatIconBillboard(SPRITE3D_GREN_GAS, &ci_textures[citex_gren_gas], p, billboard, 0);  break;
+			case TFICON_GREN_MIRV: R_DrawChatIconBillboard(SPRITE3D_GREN_MIRV, &ci_textures[citex_gren_mirv], p, billboard, 0);  break;
+			case TFICON_GREN_NAIL: R_DrawChatIconBillboard(SPRITE3D_GREN_NAIL, &ci_textures[citex_gren_nail], p, billboard, 0);  break;
+			case TFICON_GREN_NAPALM: R_DrawChatIconBillboard(SPRITE3D_GREN_NAPALM, &ci_textures[citex_gren_napalm], p, billboard, 0);  break;
+			case TFICON_PASSFLAG: R_DrawChatIconBillboard(SPRITE3D_PASSFLAG, &ci_textures[citex_passflag], p, billboard, 16);  break;
 			}
 			continue;
 		}
 
 		if ((flags & CIF_CHAT) && (flags & CIF_AFK)) {
-			R_DrawChatIconBillboard(SPRITE3D_CHATICON_AFK_CHAT, &ci_textures[citex_chat_afk], p, billboard2);
+			R_DrawChatIconBillboard(SPRITE3D_CHATICON_AFK_CHAT, &ci_textures[citex_chat_afk], p, billboard2, 0);
 		}
 		else if (flags & CIF_CHAT) {
-			R_DrawChatIconBillboard(SPRITE3D_CHATICON_CHAT, &ci_textures[citex_chat], p, billboard);
+			R_DrawChatIconBillboard(SPRITE3D_CHATICON_CHAT, &ci_textures[citex_chat], p, billboard, 0);
 		}
 		else if (flags & CIF_AFK) {
-			R_DrawChatIconBillboard(SPRITE3D_CHATICON_AFK, &ci_textures[citex_afk], p, billboard);
+			R_DrawChatIconBillboard(SPRITE3D_CHATICON_AFK, &ci_textures[citex_afk], p, billboard, 0);
 		}
 	}
 }

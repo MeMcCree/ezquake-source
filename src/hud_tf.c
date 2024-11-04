@@ -554,8 +554,44 @@ static void SCR_HUD_DrawScoreRed(hud_t* hud)
 	}
 }
 
+void SCR_HUD_DrawDisguiseIcon(hud_t* hud)
+{
+	extern mpic_t* sb_tfclass[2][9];
+	static cvar_t* scale = NULL;
+	uint32_t disguise;
+	int team, skin;
+	int   x, y;
+
+	if (scale == NULL) {
+		// first time called
+		scale = HUD_FindVar(hud, "scale");
+	}
+	disguise = cl.stats[STAT_SPYINFO];
+	team = disguise & 3;
+	skin = (disguise >> 2) & 15;
+	team = (team > 2 ? 0 : team);
+	skin = (skin > 9 ? 0 : skin);
+
+	float scaleval = max(scale->value, 0.01);
+
+	if (cl.spectator == cl.autocam && team != 0 && skin != 0) {
+		if (sb_tfclass[team - 1][skin - 1] == NULL) return;
+		if (!HUD_PrepareDraw(hud, sb_tfclass[team - 1][skin - 1]->width * scaleval, sb_tfclass[team - 1][skin - 1]->height * scaleval, &x, &y))
+			return;
+
+		Draw_SPic(x, y, sb_tfclass[team - 1][skin - 1], scaleval);
+	}
+}
+
 void TF_HudInit(void)
 {
+	HUD_Register("disguiseicon", NULL, "TF disguise icon",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawDisguiseIcon,
+		"0", "ibar", "left", "top", "0", "0", "0", "0 0 0", NULL,
+		"scale", "0.25",
+		"proportional", "0",
+		NULL);
+
 	HUD_Register("debufficons", NULL, "TF debuff icons",
 		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawDebuffIcons,
 		"0", "ibar", "left", "top", "0", "0", "0", "0 0 0", NULL,

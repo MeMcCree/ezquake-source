@@ -108,6 +108,7 @@ mpic_t* sb_grens[11];
 mpic_t* sb_sentry[3];
 mpic_t* sb_disp;
 mpic_t* sb_debuffs[5];
+mpic_t* sb_tfclass[2][9];
 
 mpic_t	*sb_faces[5][2];		// 0 is dead, 1-4 are alive
 // 0 is static, 1 is temporary animation
@@ -297,6 +298,26 @@ void Sbar_Init(void)
 	sb_debuffs[2] = Draw_CachePicSafe("textures/icons/tranquilized.png", false, true);
 	sb_debuffs[3] = Draw_CachePicSafe("textures/icons/conced.png", false, true);
 	sb_debuffs[4] = Draw_CachePicSafe("textures/icons/flashed.png", false, true);
+
+	sb_tfclass[0][0] = Draw_CachePicSafe("textures/icons/tf_scout_blue.png", false, true);
+	sb_tfclass[0][1] = Draw_CachePicSafe("textures/icons/tf_snipe_blue.png", false, true);
+	sb_tfclass[0][2] = Draw_CachePicSafe("textures/icons/tf_sold_blue.png", false, true);
+	sb_tfclass[0][3] = Draw_CachePicSafe("textures/icons/tf_demo_blue.png", false, true);
+	sb_tfclass[0][4] = Draw_CachePicSafe("textures/icons/tf_medic_blue.png", false, true);
+	sb_tfclass[0][5] = Draw_CachePicSafe("textures/icons/tf_hwguy_blue.png", false, true);
+	sb_tfclass[0][6] = Draw_CachePicSafe("textures/icons/tf_pyro_blue.png", false, true);
+	sb_tfclass[0][7] = Draw_CachePicSafe("textures/icons/tf_spy_blue.png", false, true);
+	sb_tfclass[0][8] = Draw_CachePicSafe("textures/icons/tf_eng_blue.png", false, true);
+
+	sb_tfclass[1][0] = Draw_CachePicSafe("textures/icons/tf_scout_red.png", false, true);
+	sb_tfclass[1][1] = Draw_CachePicSafe("textures/icons/tf_snipe_red.png", false, true);
+	sb_tfclass[1][2] = Draw_CachePicSafe("textures/icons/tf_sold_red.png", false, true);
+	sb_tfclass[1][3] = Draw_CachePicSafe("textures/icons/tf_demo_red.png", false, true);
+	sb_tfclass[1][4] = Draw_CachePicSafe("textures/icons/tf_medic_red.png", false, true);
+	sb_tfclass[1][5] = Draw_CachePicSafe("textures/icons/tf_hwguy_red.png", false, true);
+	sb_tfclass[1][6] = Draw_CachePicSafe("textures/icons/tf_pyro_red.png", false, true);
+	sb_tfclass[1][7] = Draw_CachePicSafe("textures/icons/tf_spy_red.png", false, true);
+	sb_tfclass[1][8] = Draw_CachePicSafe("textures/icons/tf_eng_red.png", false, true);
 
 	sb_face_invis = Draw_CacheWadPic("face_invis", WADPIC_FACE_INVIS);
 	sb_face_invuln = Draw_CacheWadPic("face_invul2", WADPIC_FACE_INVUL2);

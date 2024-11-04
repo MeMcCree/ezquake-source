@@ -111,6 +111,7 @@ typedef enum
 #define STAT_SENTRY 						26
 #define STAT_DISP 							27
 #define STAT_DISPADD 						28
+#define STAT_SPYINFO						29
 
 // item flags
 #define	IT_SHOTGUN              1
