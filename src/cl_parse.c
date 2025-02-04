@@ -45,6 +45,7 @@ $Id: cl_parse.c,v 1.135 2007-10-28 19:56:44 qqshka Exp $
 #include "qtv.h"
 #include "r_brushmodel_sky.h"
 #include "central.h"
+#include "tfdefs.h"
 
 int CL_LoginImageId(const char* name);
 
@@ -4058,13 +4059,40 @@ void CL_ParseServerMessage (void)
 			{
 				int j = MSG_ReadLong();
 				cl.players[j].tficon = MSG_ReadByte();
-				Con_DPrintf("[%d] = %d\n", j, cl.players[j].tficon);
+				break;
+			}
+			case svc_updateflaginfo:
+			{
+				int team = MSG_ReadByte();
+				flagstate_e state = MSG_ReadByte();
+				int delay;
+				if (team < 0 || team > 1) {
+					switch (state) {
+					case FLAG_ON_GROUND:
+						MSG_ReadLong();
+						break;
+					case FLAG_CARRIED:
+						MSG_ReadString();
+						break;
+					}
+					break;
+				}
+				
+				cl.flaginfo[team].state = state;
+				switch (state) {
+				case FLAG_ON_GROUND:
+					delay = MSG_ReadLong();
+					cl.flaginfo[team].end = cl.time + delay * 0.001f;
+					break;
+				case FLAG_CARRIED:
+					strncpy(cl.flaginfo[team].nickname, MSG_ReadString(), 64);
+					break;
+				}
 				break;
 			}
 		}
 
-		// cl_messages, update size
-		if (cmd < NUMMSG)
+		// cl_messages, update size		if (cmd < NUMMSG)
 			cl_messages[cmd].size += msg_readcount - oldread;
 
 		if (cls.demorecording)

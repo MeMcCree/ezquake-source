@@ -38,6 +38,96 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define DISP_AMMO_CELLS		4
 #define DISP_AMMO_ARMOR		5
 
+static void SCR_HUD_DrawBlueFlagInfo(hud_t* hud)
+{
+	extern mpic_t* sb_flags[2];
+	int x, y;
+	static cvar_t* scale = NULL, * blink, * proportional, * textscaling;
+	char t[128] = { 0 };
+	float alpha;
+	if (scale == NULL) {
+		// first time called
+		scale = HUD_FindVar(hud, "scale");
+		proportional = HUD_FindVar(hud, "proportional");
+		blink = HUD_FindVar(hud, "blink");
+		textscaling = HUD_FindVar(hud, "textscaling");
+	}
+	if (cl.spectator != cl.autocam || cl.flaginfo[0].state == FLAGINFO_NOTINIT)
+		return;
+
+	float scaleval = max(scale->value, 0.01);
+
+	if (!sb_flags[0]) return;
+	if (!HUD_PrepareDraw(hud, sb_flags[0]->width * scaleval, sb_flags[0]->width * scaleval, &x, &y))
+		return;
+
+	switch (cl.flaginfo[0].state) {
+	case FLAG_ON_BASE:
+		Draw_SAlphaPic(x, y, sb_flags[0], 1.0f, scaleval);
+		break;
+	case FLAG_ON_GROUND:
+		Draw_SAlphaPic(x, y, sb_flags[0], 0.75f, scaleval);
+		y += sb_flags[0]->height * scaleval;
+		snprintf(t, sizeof(t), "%d", (int)(cl.flaginfo[0].end - cl.time));
+		
+		Draw_SString(x, y, t, scaleval * textscaling->value, proportional->value);
+		break;
+	case FLAG_CARRIED:
+		alpha = blink->value ? sin(cl.time * 2) : 0.75f;
+		Draw_SAlphaPic(x, y, sb_flags[0], alpha < 0.0f ? -alpha : alpha, scaleval);
+		y += sb_flags[0]->height * scaleval;
+		snprintf(t, sizeof(t), "%s", cl.flaginfo[0].nickname);
+
+		Draw_SString(x, y, t, scaleval * textscaling->value, proportional->value);
+		break;
+	}	
+}
+
+static void SCR_HUD_DrawRedFlagInfo(hud_t* hud)
+{
+	extern mpic_t* sb_flags[2];
+	int x, y;
+	static cvar_t* scale = NULL, * blink, * proportional, * textscaling;
+	char t[128] = { 0 };
+	float alpha;
+	if (scale == NULL) {
+		// first time called
+		scale = HUD_FindVar(hud, "scale");
+		proportional = HUD_FindVar(hud, "proportional");
+		blink = HUD_FindVar(hud, "blink");
+		textscaling = HUD_FindVar(hud, "textscaling");
+	}
+	if (cl.spectator != cl.autocam || cl.flaginfo[1].state == FLAGINFO_NOTINIT)
+		return;
+
+	float scaleval = max(scale->value, 0.01);
+
+	if (!sb_flags[1]) return;
+	if (!HUD_PrepareDraw(hud, sb_flags[1]->width * scaleval, sb_flags[1]->width * scaleval, &x, &y))
+		return;
+
+	switch (cl.flaginfo[1].state) {
+	case FLAG_ON_BASE:
+		Draw_SAlphaPic(x, y, sb_flags[1], 1.0f, scaleval);
+		break;
+	case FLAG_ON_GROUND:
+		Draw_SAlphaPic(x, y, sb_flags[1], 0.75f, scaleval);
+		y += sb_flags[1]->height * scaleval;
+		snprintf(t, sizeof(t), "%d", (int)(cl.flaginfo[1].end - cl.time));
+
+		Draw_SString(x, y, t, scaleval * textscaling->value, proportional->value);
+		break;
+	case FLAG_CARRIED:
+		alpha = blink->value ? sin(cl.time * 2) : 0.75f;
+		Draw_SAlphaPic(x, y, sb_flags[1], alpha < 0.0f ? -alpha : alpha, scaleval);
+		y += sb_flags[1]->height * scaleval;
+		snprintf(t, sizeof(t), "%s", cl.flaginfo[1].nickname);
+
+		Draw_SString(x, y, t, scaleval * textscaling->value, proportional->value);
+		break;
+	}
+}
+
 static void SCR_HUD_DrawSentryStat(hud_t* hud, int type)
 {
 	static cvar_t* scale = NULL, * style, * digits, * align, * proportional;
@@ -585,6 +675,28 @@ void SCR_HUD_DrawDisguiseIcon(hud_t* hud)
 
 void TF_HudInit(void)
 {
+	HUD_Register(
+		"blueflaginfo", NULL, "Blue flag's info",
+		0, ca_active, 0, SCR_HUD_DrawBlueFlagInfo,
+		"0", "screen", "center", "bottom", "0", "0", "0", "0 0 0", NULL,
+		"scale", "0.25",
+		"proportional", "0",
+		"blink", "1",
+		"textscaling", "2",
+		NULL
+	);
+
+	HUD_Register(
+		"redflaginfo", NULL, "Red flag's info",
+		0, ca_active, 0, SCR_HUD_DrawRedFlagInfo,
+		"0", "screen", "center", "bottom", "0", "0", "0", "0 0 0", NULL,
+		"scale", "0.25",
+		"proportional", "0",
+		"blink", "1",
+		"textscaling", "2",
+		NULL
+	);
+
 	HUD_Register("disguiseicon", NULL, "TF disguise icon",
 		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawDisguiseIcon,
 		"0", "ibar", "left", "top", "0", "0", "0", "0 0 0", NULL,

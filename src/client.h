@@ -547,6 +547,21 @@ typedef struct antilag_stats_s {
 #define MAX_DAMAGE_NOTIFICATION_TIME 1.5
 #define MAX_DAMAGE_NOTIFICATIONS 15 // ((int)(10 * MAX_DAMAGE_NOTIFICATION_TIME))
 
+typedef enum {
+	FLAGINFO_NOTINIT,
+	FLAG_ON_BASE,
+	FLAG_ON_GROUND,
+	FLAG_CARRIED,
+} flagstate_e;
+
+typedef struct {
+	flagstate_e state;
+	union {
+		float end;
+		char nickname[64];
+	};
+} flaginfo_t;
+
 typedef struct scr_damage_s {
 	char text[64];
 	double time;
@@ -771,6 +786,7 @@ typedef struct {
 	float map_fog_sky;
 
 	int tftime;
+	flaginfo_t flaginfo[4];
 } clientState_t;
 
 #define SCORING_SYSTEM_DEFAULT   0

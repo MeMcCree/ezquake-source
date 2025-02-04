@@ -109,6 +109,7 @@ mpic_t* sb_sentry[3];
 mpic_t* sb_disp;
 mpic_t* sb_debuffs[5];
 mpic_t* sb_tfclass[2][9];
+mpic_t* sb_flags[2];
 
 mpic_t	*sb_faces[5][2];		// 0 is dead, 1-4 are alive
 // 0 is static, 1 is temporary animation
@@ -318,6 +319,9 @@ void Sbar_Init(void)
 	sb_tfclass[1][6] = Draw_CachePicSafe("textures/icons/tf_pyro_red.png", false, true);
 	sb_tfclass[1][7] = Draw_CachePicSafe("textures/icons/tf_spy_red.png", false, true);
 	sb_tfclass[1][8] = Draw_CachePicSafe("textures/icons/tf_eng_red.png", false, true);
+
+	sb_flags[0] = Draw_CachePicSafe("textures/icons/flag_1.png", false, true);
+	sb_flags[1] = Draw_CachePicSafe("textures/icons/flag_2.png", false, true);
 
 	sb_face_invis = Draw_CacheWadPic("face_invis", WADPIC_FACE_INVIS);
 	sb_face_invuln = Draw_CacheWadPic("face_invul2", WADPIC_FACE_INVUL2);

@@ -620,6 +620,7 @@ set(client_headers
         ${SOURCE_DIR}/wad.h
         ${SOURCE_DIR}/xsd.h
         ${SOURCE_DIR}/xsd_document.h
+        ${SOURCE_DIR}/tfdefs.h
 )
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     list(APPEND client_headers ${SOURCE_DIR}/movie_avi.h)
