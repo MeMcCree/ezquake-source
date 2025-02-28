@@ -38,94 +38,99 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define DISP_AMMO_CELLS		4
 #define DISP_AMMO_ARMOR		5
 
-static void SCR_HUD_DrawBlueFlagInfo(hud_t* hud)
+static void SCR_HUD_DrawFlaginfoData(hud_t* hud, int team, float scale, int align, qbool proportional)
 {
-	extern mpic_t* sb_flags[2];
-	int x, y;
-	static cvar_t* scale = NULL, * blink, * proportional, * textscaling;
 	char t[128] = { 0 };
-	float alpha;
-	if (scale == NULL) {
-		// first time called
-		scale = HUD_FindVar(hud, "scale");
-		proportional = HUD_FindVar(hud, "proportional");
-		blink = HUD_FindVar(hud, "blink");
-		textscaling = HUD_FindVar(hud, "textscaling");
-	}
-	if (cl.spectator != cl.autocam || cl.flaginfo[0].state == FLAGINFO_NOTINIT)
+
+	if (cl.spectator != cl.autocam || cl.flaginfo[team].state == FLAGINFO_NOTINIT || cl.flaginfo[team].state == FLAG_ON_BASE)
 		return;
 
-	float scaleval = max(scale->value, 0.01);
-
-	if (!sb_flags[0]) return;
-	if (!HUD_PrepareDraw(hud, sb_flags[0]->width * scaleval, sb_flags[0]->width * scaleval, &x, &y))
-		return;
-
-	switch (cl.flaginfo[0].state) {
-	case FLAG_ON_BASE:
-		Draw_SAlphaPic(x, y, sb_flags[0], 1.0f, scaleval);
-		break;
+	switch (cl.flaginfo[team].state) {
 	case FLAG_ON_GROUND:
-		Draw_SAlphaPic(x, y, sb_flags[0], 0.75f, scaleval);
-		y += sb_flags[0]->height * scaleval;
-		snprintf(t, sizeof(t), "%d", (int)(cl.flaginfo[0].end - cl.time));
-		
-		Draw_SString(x, y, t, scaleval * textscaling->value, proportional->value);
+		snprintf(t, sizeof(t), "%d", (int)(cl.flaginfo[team].end - cl.time));
+		SCR_HUD_MultiLineString(hud, t, 0, align, scale, proportional);
 		break;
 	case FLAG_CARRIED:
-		alpha = blink->value ? sin(cl.time * 2) : 0.75f;
-		Draw_SAlphaPic(x, y, sb_flags[0], alpha < 0.0f ? -alpha : alpha, scaleval);
-		y += sb_flags[0]->height * scaleval;
-		snprintf(t, sizeof(t), "%s", cl.flaginfo[0].nickname);
-
-		Draw_SString(x, y, t, scaleval * textscaling->value, proportional->value);
+		snprintf(t, sizeof(t), "%s", cl.flaginfo[team].nickname);
+		SCR_HUD_MultiLineString(hud, t, 0, align, scale, proportional);
 		break;
-	}	
+	}
 }
 
-static void SCR_HUD_DrawRedFlagInfo(hud_t* hud)
+static void SCR_HUD_DrawBlueFlaginfoData(hud_t* hud) {
+	static cvar_t* scale = NULL, * align, * proportional;
+
+	if (scale == NULL) {
+		scale = HUD_FindVar(hud, "scale");
+		align = HUD_FindVar(hud, "align");
+		proportional = HUD_FindVar(hud, "proportional");
+	}
+
+	SCR_HUD_DrawFlaginfoData(hud, 0, scale->value, align->value, proportional->value);
+}
+
+static void SCR_HUD_DrawRedFlaginfoData(hud_t* hud) {
+	static cvar_t* scale = NULL, * align, * proportional;
+
+	if (scale == NULL) {
+		scale = HUD_FindVar(hud, "scale");
+		align = HUD_FindVar(hud, "align");
+		proportional = HUD_FindVar(hud, "proportional");
+	}
+
+	SCR_HUD_DrawFlaginfoData(hud, 1, scale->value, align->value, proportional->value);
+}
+
+static void SCR_HUD_DrawFlaginfoIcon(hud_t* hud, int team, float scale, qbool blink)
 {
 	extern mpic_t* sb_flags[2];
 	int x, y;
-	static cvar_t* scale = NULL, * blink, * proportional, * textscaling;
 	char t[128] = { 0 };
 	float alpha;
-	if (scale == NULL) {
-		// first time called
-		scale = HUD_FindVar(hud, "scale");
-		proportional = HUD_FindVar(hud, "proportional");
-		blink = HUD_FindVar(hud, "blink");
-		textscaling = HUD_FindVar(hud, "textscaling");
-	}
-	if (cl.spectator != cl.autocam || cl.flaginfo[1].state == FLAGINFO_NOTINIT)
+
+	if (cl.spectator != cl.autocam || cl.flaginfo[team].state == FLAGINFO_NOTINIT)
 		return;
 
-	float scaleval = max(scale->value, 0.01);
+	float scaleval = max(scale, 0.01);
 
-	if (!sb_flags[1]) return;
-	if (!HUD_PrepareDraw(hud, sb_flags[1]->width * scaleval, sb_flags[1]->width * scaleval, &x, &y))
+	if (!sb_flags[team]) return;
+	if (!HUD_PrepareDraw(hud, sb_flags[0]->width * scaleval, sb_flags[team]->width * scaleval, &x, &y))
 		return;
 
-	switch (cl.flaginfo[1].state) {
+	switch (cl.flaginfo[team].state) {
 	case FLAG_ON_BASE:
-		Draw_SAlphaPic(x, y, sb_flags[1], 1.0f, scaleval);
+		Draw_SAlphaPic(x, y, sb_flags[team], 1.0f, scaleval);
 		break;
 	case FLAG_ON_GROUND:
-		Draw_SAlphaPic(x, y, sb_flags[1], 0.75f, scaleval);
-		y += sb_flags[1]->height * scaleval;
-		snprintf(t, sizeof(t), "%d", (int)(cl.flaginfo[1].end - cl.time));
-
-		Draw_SString(x, y, t, scaleval * textscaling->value, proportional->value);
+		Draw_SAlphaPic(x, y, sb_flags[team], 0.75f, scaleval);
 		break;
 	case FLAG_CARRIED:
-		alpha = blink->value ? sin(cl.time * 2) : 0.75f;
-		Draw_SAlphaPic(x, y, sb_flags[1], alpha < 0.0f ? -alpha : alpha, scaleval);
-		y += sb_flags[1]->height * scaleval;
-		snprintf(t, sizeof(t), "%s", cl.flaginfo[1].nickname);
-
-		Draw_SString(x, y, t, scaleval * textscaling->value, proportional->value);
+		alpha = blink ? sin(cl.time * 2) : 0.75f;
+		Draw_SAlphaPic(x, y, sb_flags[team], alpha < 0.0f ? -alpha : alpha, scaleval);
 		break;
 	}
+}
+
+static void SCR_HUD_DrawBlueFlaginfoIcon(hud_t* hud) {
+	static cvar_t* scale = NULL, * blink;
+
+	if (scale == NULL) {
+		scale = HUD_FindVar(hud, "scale");
+		blink = HUD_FindVar(hud, "blink");
+	}
+
+	SCR_HUD_DrawFlaginfoIcon(hud, 0, scale->value, blink->value);
+}
+
+static void SCR_HUD_DrawRedFlaginfoIcon(hud_t* hud) {
+	static cvar_t* scale = NULL, * blink;
+
+	if (scale == NULL) {
+		scale = HUD_FindVar(hud, "scale");
+		blink = HUD_FindVar(hud, "blink");
+	}
+
+	SCR_HUD_DrawFlaginfoIcon(hud, 1, scale->value, blink->value);
 }
 
 static void SCR_HUD_DrawSentryStat(hud_t* hud, int type)
@@ -673,27 +678,98 @@ void SCR_HUD_DrawDisguiseIcon(hud_t* hud)
 	}
 }
 
+const double class_armor_lookup[11] = {
+	0.0f, // NONE
+	0.3f, // PC_SCOUT
+	0.3f, // PC_SNIPER
+	0.8f, // PC_SOLDIER
+	0.6f, // PC_DEMOMAN
+	0.6f, // PC_MEDIC
+	0.8f, // PC_HVYWEAP
+	0.6f, // PC_PYRO
+	0.3f, // PC_SPY
+	0.6f, // PC_ENGINEER
+	0.0f  // PC_CIVILIAN
+};
+static void SCR_HUD_DrawTFEffHealth(hud_t* hud)
+{
+	static cvar_t* scale = NULL, * style, * digits, * align, * proportional;
+	int health, armor;
+	int eff_health;
+	double ar_ab = 1.0f, hl_ab = 0.0f, ar_dmg, hl_dmg, dmg;
+	int idx = 0;
+	if (scale == NULL) {
+		scale = HUD_FindVar(hud, "scale");
+		style = HUD_FindVar(hud, "style");
+		digits = HUD_FindVar(hud, "digits");
+		align = HUD_FindVar(hud, "align");
+		proportional = HUD_FindVar(hud, "proportional");
+	}
+
+	health = cl.stats[STAT_HEALTH];
+	armor = cl.stats[STAT_ARMOR];
+	if (cl.spectator == cl.autocam) {
+		idx = cl.ideal_track;
+	} else {
+		idx = cl.playernum;
+	}
+
+	assert(cl.players[idx].playerclass >= 0 && cl.players[idx].playerclass <= 10);
+	ar_ab = class_armor_lookup[cl.players[idx].playerclass];
+	hl_ab = 1.0f - ar_ab;
+	dmg = (double)armor / ar_ab;
+	ar_dmg = dmg * ar_ab;
+	hl_dmg = dmg * hl_ab;
+	if (hl_dmg > health) {
+		eff_health = (double)health / hl_ab;
+	} else {
+		eff_health = ar_dmg + health;
+	}
+
+	if (eff_health < 0) {
+		eff_health = 0;
+	}
+
+	SCR_HUD_DrawNum(hud, eff_health, 0, scale->value, style->value, digits->value, align->string, proportional->integer);
+}
+
 void TF_HudInit(void)
 {
 	HUD_Register(
-		"blueflaginfo", NULL, "Blue flag's info",
-		0, ca_active, 0, SCR_HUD_DrawBlueFlagInfo,
-		"0", "screen", "center", "bottom", "0", "0", "0", "0 0 0", NULL,
-		"scale", "0.25",
+		"blueflaginfodata", NULL, "Blue's flag's info data",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawBlueFlaginfoData,
+		"1", "screen", "center", "bottom", "0", "0", "0", "0 0 0", NULL,
+		"scale", "1",
+		"align", "right",
 		"proportional", "0",
-		"blink", "1",
-		"textscaling", "2",
 		NULL
 	);
 
 	HUD_Register(
-		"redflaginfo", NULL, "Red flag's info",
-		0, ca_active, 0, SCR_HUD_DrawRedFlagInfo,
+		"redflaginfodata", NULL, "Red's flag's info data",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawRedFlaginfoData,
+		"1", "screen", "center", "bottom", "0", "0", "0", "0 0 0", NULL,
+		"scale", "1",
+		"align", "right",
+		"proportional", "0",
+		NULL
+	);
+
+	HUD_Register(
+		"blueflaginfoicon", NULL, "Blue flag's info icon",
+		0, ca_active, 0, SCR_HUD_DrawBlueFlaginfoIcon,
 		"0", "screen", "center", "bottom", "0", "0", "0", "0 0 0", NULL,
 		"scale", "0.25",
-		"proportional", "0",
 		"blink", "1",
-		"textscaling", "2",
+		NULL
+	);
+
+	HUD_Register(
+		"redflaginfoicon", NULL, "Red flag's info icon",
+		0, ca_active, 0, SCR_HUD_DrawRedFlaginfoIcon,
+		"0", "screen", "center", "bottom", "0", "0", "0", "0 0 0", NULL,
+		"scale", "0.25",
+		"blink", "1",
 		NULL
 	);
 
@@ -889,6 +965,18 @@ void TF_HudInit(void)
 	HUD_Register(
 		"clip", NULL, "TF current clip",
 		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawClip,
+		"1", "face", "after", "center", "0", "0", "0", "0 0 0", NULL,
+		"style", "0",
+		"scale", "1",
+		"align", "right",
+		"digits", "3",
+		"proportional", "0",
+		NULL
+	);
+
+	HUD_Register(
+		"effhealth", NULL, "Effective health",
+		HUD_INVENTORY, ca_active, 0, SCR_HUD_DrawTFEffHealth,
 		"1", "face", "after", "center", "0", "0", "0", "0 0 0", NULL,
 		"style", "0",
 		"scale", "1",

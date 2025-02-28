@@ -523,9 +523,10 @@ static int scoreboardlines;
 typedef struct {
 	char team[SCR_TEAM_T_MAXTEAMSIZE];
 	int frags;
+	int touches;
 	int caps;
+	int damage;
 	int players;
-	int plow, phigh, ptotal;
 	int topcolor, bottomcolor;
 	int known_team_number;
 	qbool myteam;
@@ -594,6 +595,14 @@ static qbool Sbar_SortFrags(qbool spec) {
 	return any_flags;
 }
 
+static char* tf_team_lookup[5] = {
+	"",
+	"blue",
+	"red",
+	"green",
+	"yellow"
+};
+
 static void Sbar_SortTeams (void) {
 	int i, j, k, mynum, playertoteam[MAX_CLIENTS];
 	player_info_t *s;
@@ -614,48 +623,26 @@ static void Sbar_SortTeams (void) {
 
 	// sort the teams
 	memset(teams, 0, sizeof(teams));
-	for (i = 0; i < MAX_CLIENTS; i++)
-		teams[i].plow = 999;
 
 	mynum = Sbar_PlayerNum();
 
 	for (i = 0; i < MAX_CLIENTS; i++) {
-		int flagstats[] = { 0, 0, 0 };
-
 		s = &cl.players[i];
 		if (!s->name[0] || s->spectator)
 			continue;
 
 		// find his team in the list
-		strlcpy (t, s->team, sizeof(t));
+		strlcpy (t, tf_team_lookup[s->team_no], sizeof(t));
 		if (!t[0])
 			continue; // not on team
-
-		Stats_GetFlagStats(s - cl.players, flagstats);
 
 		for (j = 0; j < scoreboardteams; j++) {
 			if (!strcmp(teams[j].team, t)) {
 				playertoteam[i] = j;
-
-				if (cl.scoring_system == SCORING_SYSTEM_TEAMFRAGS) {
-					if (teams[j].players == 0) {
-						teams[j].frags = s->frags;
-						teams[j].caps = flagstats[2];
-					}
-					else {
-						teams[j].frags = max(s->frags, teams[j].frags);
-						teams[j].caps = max(flagstats[2], teams[j].caps);
-					}
-				}
-				else {
-					teams[j].frags += s->frags;
-					teams[j].caps += flagstats[2];
-				}
+				teams[j].touches += s->touches;
+				teams[j].caps += s->caps;
+				teams[j].damage += s->damage;
 				teams[j].players++;
-				if (!cl.teamfortress && i == mynum) {
-					teams[j].topcolor = scr_scoreboard_forcecolors.value ? s->topcolor : s->real_topcolor;
-					teams[j].bottomcolor = scr_scoreboard_forcecolors.value ? s->bottomcolor : s->real_bottomcolor;
-				}
 				break;
 			}
 		}
@@ -663,8 +650,9 @@ static void Sbar_SortTeams (void) {
 			j = scoreboardteams++;
 			playertoteam[i] = j;
 
-			teams[j].frags = s->frags;
-			teams[j].caps = flagstats[2];
+			teams[j].touches = s->touches;
+			teams[j].caps = s->caps;
+			teams[j].damage = s->damage;
 			teams[j].players = 1;
 			teams[j].known_team_number = s->known_team_color;
 			if (cl.teamfortress) {
@@ -680,9 +668,6 @@ static void Sbar_SortTeams (void) {
 			else
 				teams[j].myteam = false;
 		}
-		teams[j].plow = min(s->ping, teams[j].plow);
-		teams[j].phigh = max(s->ping, teams[j].phigh);
-		teams[j].ptotal += s->ping;
 	}
 
 	//prepare for sort
@@ -692,38 +677,14 @@ static void Sbar_SortTeams (void) {
 	// good 'ol bubble sort
 	for (i = 0; i < scoreboardteams - 1; i++) {
 		for (j = i + 1; j < scoreboardteams; j++) {
-			if (teams[teamsort[i]].frags < teams[teamsort[j]].frags) {
+			if (teams[teamsort[i]].caps < teams[teamsort[j]].caps) {
 				k = teamsort[i];
 				teamsort[i] = teamsort[j];
 				teamsort[j] = k;
 			}
 		}
 	}
-
-	if (cl.teamfortress && (cl.scoring_system == SCORING_SYSTEM_DEFAULT)) {
-		for (i = 0; i < scoreboardteams; i++) {
-			float frags = (float) teams[i].frags / teams[i].players;
-
-			if (frags != (int) frags)
-				return;
-
-			for (j = 0; j < MAX_CLIENTS; j++) {
-				s = &cl.players[j];
-				if (!s->name[0] || s->spectator || playertoteam[j] != i)
-					continue;
-
-				if (s->frags != frags)
-					return;
-			}
-		}
-
-		for (i = 0; i < scoreboardteams; i++) {
-			teams[i].frags /= teams[i].players;
-		}
-	}
 }
-
-
 
 static int Sbar_SortTeamsAndFrags_Compare(int a, int b) {
 	int team_comp, frag_comp;
@@ -757,9 +718,9 @@ static int Sbar_SortTeamsAndFrags_Compare(int a, int b) {
 				break;
 			}
 		}
-		return (t1 && t2 && t1->frags != t2->frags) ? (t2->frags - t1->frags) : team_comp;
+		return (t1 && t2 && t1->caps != t2->caps) ? (t2->caps - t1->caps) : team_comp;
 	} else {
-		return (frag_comp = p2->frags - p1->frags) ? frag_comp : strcasecmp(p1->name, p2->name);
+		return (frag_comp = p2->caps - p1->caps) ? frag_comp : strcasecmp(p1->name, p2->name);
 	}
 }
 
@@ -1307,13 +1268,11 @@ static qbool Sbar_ShowTeamKills(void)
 
 static void Sbar_DeathmatchOverlay(int start)
 {
-	int stats_team, stats_touches, stats_caps, playerstats[7];
+	int playerstats[7];
 	int scoreboardsize, colors_thickness, statswidth, stats_xoffset = 0;
-	int i, k, x, y, xofs, total, p, skip = 10, fragsint;
+	int i, k, x, y, xofs, p, skip = 10;
 	int rank_width, leftover, startx, tempx, mynum;
 	char num[12];
-	char myminutes[11];
-	char fragsstr[10];
 	player_info_t *s;
 	ti_player_t *ti_cl;
 	mpic_t *pic;
@@ -1353,30 +1312,8 @@ static void Sbar_DeathmatchOverlay(int start)
 	rank_width = (cl.teamplay ? RANK_WIDTH_TEAM : RANK_WIDTH_DM);
 
 	statswidth = 0;
-	stats_team = stats_touches = stats_caps = 0;
-	if (scr_scoreboard_showfrags.value && Stats_IsActive()) {
-		if (rank_width + statswidth + RANK_WIDTH_BASICSTATS < vid.width - 16) {
-			statswidth += RANK_WIDTH_BASICSTATS;
-			if (cl.teamplay) {
-				if (rank_width + statswidth + RANK_WIDTH_TEAMSTATS < vid.width - 16) {
-					if (Sbar_ShowTeamKills()) {
-						statswidth += RANK_WIDTH_TEAMSTATS;
-						stats_team++;
-					}
-				}
-				if ((cl.teamfortress || scr_scoreboard_showflagstats.value) && Stats_IsFlagsParsed()) {
-					if (rank_width + statswidth + RANK_WIDTH_TCHSTATS < vid.width - 16) {
-						statswidth += RANK_WIDTH_TCHSTATS;
-						stats_touches++;
-					}
-					if (rank_width + statswidth + RANK_WIDTH_CAPSTATS < vid.width - 16) {
-						statswidth += RANK_WIDTH_CAPSTATS;
-						stats_caps++;
-					}
-				}
-			}
-		}
-	}
+	statswidth += RANK_WIDTH_TEAMSTATS + RANK_WIDTH_TCHSTATS + RANK_WIDTH_CAPSTATS;
+
 	rank_width += statswidth;
 
 	leftover = rank_width;
@@ -1429,21 +1366,13 @@ static void Sbar_DeathmatchOverlay(int start)
 	Draw_AlphaFill(xofs, y - 8, rank_width, 9, 1, SCOREBOARD_HEADINGALPHA);	//Draw heading row
 
 	x = xofs + 1;
-	// teamplay: " ping pl  fps frags team name" | " ping pl time frags team name"
-	// non-tp  : " ping pl  fps frags name" | " ping pl time frags name"
 	x += FONT_WIDTH;
 	Draw_SStringAligned(x, y - 8, "ping", scale, alpha, proportional, text_align_right, x + FONT_WIDTH * 4);
 	x += 5 * FONT_WIDTH;
+	
 	Draw_SStringAligned(x, y - 8, "pl", scale, alpha, proportional, text_align_right, x + FONT_WIDTH * 2);
 	x += 3 * FONT_WIDTH;
-	Draw_SStringAligned(x, y - 8, "time", scale, alpha, proportional, text_align_right, x + FONT_WIDTH * 4);
-	x += 5 * FONT_WIDTH;
-	Draw_SStringAligned(x, y - 8, "frags", scale, alpha, proportional, text_align_right, x + FONT_WIDTH * 5);
-	x += 6 * FONT_WIDTH;
-	if (cl.teamplay) {
-		Draw_SStringAligned(x, y - 8, "team", scale, alpha, proportional, text_align_center, x + FONT_WIDTH * 4);
-		x += 5 * FONT_WIDTH;
-	}
+
 	if (any_flags) {
 		x += FONT_WIDTH;
 	}
@@ -1454,22 +1383,21 @@ static void Sbar_DeathmatchOverlay(int start)
 
 		Draw_SStringAligned(x, y - 8, "kills", scale, alpha, proportional, text_align_right, x + FONT_WIDTH * 5);
 		x += FONT_WIDTH * 6;
-		if (stats_team) {
-			Draw_SStringAligned(x, y - 8, "tks", scale, alpha, proportional, text_align_right, x + FONT_WIDTH * 3);
-			x += FONT_WIDTH * 4;
-		}
+		
+		Draw_SStringAligned(x, y - 8, "tks", scale, alpha, proportional, text_align_right, x + FONT_WIDTH * 3);
+		x += FONT_WIDTH * 4;
+		
 		Draw_SStringAligned(x, y - 8, "dths", scale, alpha, proportional, text_align_right, x + FONT_WIDTH * 4);
 		x += FONT_WIDTH * 5;
 
-		if (stats_touches) {
-			Draw_SStringAligned(x, y - 8, "tchs", scale, alpha, proportional, text_align_right, x + FONT_WIDTH * 4);
-			x += FONT_WIDTH * 5;
-		}
+		Draw_SStringAligned(x, y - 8, "tchs", scale, alpha, proportional, text_align_right, x + FONT_WIDTH * 4);
+		x += FONT_WIDTH * 5;
 
-		if (stats_caps) {
-			Draw_SStringAligned(x, y - 8, "caps", scale, alpha, proportional, text_align_right, x + FONT_WIDTH * 4);
-			x += FONT_WIDTH * 5;
-		}
+		Draw_SStringAligned(x, y - 8, "caps", scale, alpha, proportional, text_align_right, x + FONT_WIDTH * 4);
+		x += FONT_WIDTH * 5;
+
+		Draw_SStringAligned(x, y - 8, "dmg", scale, alpha, proportional, text_align_right, x + FONT_WIDTH * 4);
+		x += FONT_WIDTH * 6;
 	}
 
 	x = xofs + 1;
@@ -1581,37 +1509,6 @@ static void Sbar_DeathmatchOverlay(int start)
 		Draw_SColoredStringAligned(x, y, num, &color, 1, scale, alpha * ca_alpha, proportional, text_align_right, x + 3 * FONT_WIDTH);
 		x += 4 * FONT_WIDTH;
 
-		// draw time
-		total = (cl.intermission ? cl.completed_time : cls.demoplayback ? cls.demotime : cls.realtime) - s->entertime;
-		total = (int)total / 60;
-		total = bound(0, total, 999); // limit to 3 symbols int
-
-		color.c = RGBA_TO_COLOR(255, 255, 255, 255);
-		myminutes[0] = '\0';
-
-		// overwrite time column with spawn times in KTX wipeout
-		if (check_ktx_wo() && scr_scoreboard_wipeout.value && (ti_cl->isdead == 1) && (ti_cl->timetospawn > 0) && (ti_cl->timetospawn < 999)){
-			color.c = RGBA_TO_COLOR(0xFF, 0xAA, 0x00, 255);
-			snprintf(myminutes, sizeof(myminutes), "%d", ti_cl->timetospawn);
-			Draw_SColoredStringAligned(x, y, myminutes, &color, 1, scale * 0.85, alpha, proportional, text_align_right, x + 4 * FONT_WIDTH);
-		}
-
-		else if (!check_ktx_wo() || !scr_scoreboard_wipeout.value)
-		{
-			snprintf(myminutes, sizeof(myminutes), "%i", total);
-
-			if (scr_scoreboard_afk.integer && (s->chatflag & CIF_AFK)) {
-				color.c = RGBA_TO_COLOR(0xFF, 0x11, 0x11, 0xFF);
-				if (scr_scoreboard_afk_style.integer == 1) {
-					snprintf(myminutes, sizeof(myminutes), "afk");
-				}
-			}
-
-			Draw_SColoredStringAligned(x, y, myminutes, &color, 1, scale, alpha, proportional, text_align_right, x + 4 * FONT_WIDTH);
-		}
-
-		x += 5 * FONT_WIDTH;
-
 		// draw spectator
 		if (s->spectator) {
 			if (cl.teamplay) {
@@ -1655,40 +1552,6 @@ static void Sbar_DeathmatchOverlay(int start)
 			continue;
 		}
 
-		// print the shirt/pants colour bars
-		// use Draw_AlphaFill with additional alpha arg for wipeout deaths
-		Draw_AlphaFill(cl.teamplay ? tempx - 40 : tempx, y + 4 - colors_thickness, 40, colors_thickness, Sbar_TopColorScoreboard(s), ca_alpha);
-		Draw_AlphaFill(cl.teamplay ? tempx - 40 : tempx, y + 4, 40, 4, Sbar_BottomColorScoreboard(s), ca_alpha);
-
-		// frags
-		if (Sbar_ShowScoreboardIndicator() && k == mynum) {
-			Draw_Character(x, y, 16);
-		}
-		fragsint = bound(-999, s->frags, 9999); // limit to 4 symbols int
-		snprintf(fragsstr, sizeof(fragsstr), "%i", fragsint);
-		
-		if (check_ktx_ca_wo() && scr_scoreboard_wipeout.value && ti_cl->isdead)
-		{
-			color.c = RGBA_TO_COLOR(85, 85, 85, 255 * ca_alpha);	// change team/name to gray transparent text if dead in ca/wipeout
-		}
-		else
-		{
-			color.c = RGBA_TO_COLOR(255, 255, 255, 255 * ca_alpha);
-		}
-		
-		Draw_SColoredStringAligned(x, y, fragsstr, &color, 1, scale, alpha * ca_alpha, proportional, text_align_right, x + 4 * FONT_WIDTH);
-		x += 4 * FONT_WIDTH;
-		if (Sbar_ShowScoreboardIndicator() && k == mynum) {
-			Draw_Character(x, y, 17);
-		}
-		x += 2 * FONT_WIDTH;
-
-		// team
-		if (cl.teamplay) {
-			Draw_SColoredStringAligned(x, y, s->team, &color, 1, scale, alpha * ca_alpha, proportional, text_align_center, x + 4 * FONT_WIDTH);
-			x += 5 * FONT_WIDTH;
-		}
-
 		if (s->loginname[0] && scr_scoreboard_login_indicator.string[0]) {
 			mpic_t* flag = CL_LoginFlag(s->loginflag_id);
 			if (s->loginflag[0] && flag) {
@@ -1698,6 +1561,7 @@ static void Sbar_DeathmatchOverlay(int start)
 				Draw_SStringAligned(x - FONT_WIDTH * 0.75, y, scr_scoreboard_login_indicator.string, scale, alpha * ca_alpha, proportional, text_align_center, x + FONT_WIDTH * 1.6);
 			}
 		}
+		
 		if (any_flags) {
 			x += FONT_WIDTH;
 		}
@@ -1717,9 +1581,6 @@ static void Sbar_DeathmatchOverlay(int start)
 		if (statswidth) {
 			x = stats_xoffset;
 			Stats_GetBasicStats(s - cl.players, playerstats);
-			if (stats_touches || stats_caps) {
-				Stats_GetFlagStats(s - cl.players, playerstats + 4);
-			}
 
 			// kills
 			if (check_ktx_wo() && scr_scoreboard_wipeout.value)
@@ -1735,13 +1596,10 @@ static void Sbar_DeathmatchOverlay(int start)
 			Draw_SColoredStringAligned(x, y, num, &color, 1, scale, alpha, proportional, text_align_right, x + 5 * FONT_WIDTH);
 			x += 6 * FONT_WIDTH;
 
-			// teamkills
-			if (stats_team) {
-				snprintf(num, sizeof(num), "%3i", playerstats[2]);
-				color.c = (playerstats[2] == 0 ? RGBA_TO_COLOR(255, 255, 255, 255) : RGBA_TO_COLOR(255, 255, 0, 255));
-				Draw_SColoredStringAligned(x, y, num, &color, 1, scale, alpha, proportional, text_align_right, x + 3 * FONT_WIDTH);
-				x += 4 * FONT_WIDTH;
-			}
+			snprintf(num, sizeof(num), "%3i", playerstats[2]);
+			color.c = (playerstats[2] == 0 ? RGBA_TO_COLOR(255, 255, 255, 255) : RGBA_TO_COLOR(255, 255, 0, 255));
+			Draw_SColoredStringAligned(x, y, num, &color, 1, scale, alpha, proportional, text_align_right, x + 3 * FONT_WIDTH);
+			x += 4 * FONT_WIDTH;
 
 			// deaths
 			if (check_ktx_wo() && scr_scoreboard_wipeout.value)
@@ -1756,59 +1614,61 @@ static void Sbar_DeathmatchOverlay(int start)
 			Draw_SColoredStringAligned(x, y, num, &color, 1, scale, alpha, proportional, text_align_right, x + 4 * FONT_WIDTH);
 			x += 5 * FONT_WIDTH;
 
-			if (stats_touches) {
-				// flag touches
-				if (playerstats[4] < 1) {
-					// 0 flag touches white
-					color.c = RGBA_TO_COLOR(0xFF, 0xFF, 0xFF, 0xFF);
-				}
-				else if (playerstats[4] < 2) {
-					// 1 flag touches yellow
-					color.c = RGBA_TO_COLOR(0xFF, 0xFF, 0x00, 0xFF);
-				}
-				else if (playerstats[4] < 5) {
-					// 2-4 flag touches orange
-					color.c = RGBA_TO_COLOR(0xFF, 0x55, 0x00, 0xFF);
-				}
-				else if (playerstats[4] < 10) {
-					// 5-9 flag touches pink
-					color.c = RGBA_TO_COLOR(0xBB, 0x33, 0xBB, 0xFF);
-				}
-				else {
-					// >9 flag touches green
-					color.c = RGBA_TO_COLOR(0x00, 0xFF, 0x00, 0xFF);
-				}
-				snprintf(num, sizeof(num), "%4i", playerstats[4]);
-				Draw_SColoredStringAligned(x, y, num, &color, 1, scale, alpha, proportional, text_align_right, x + 4 * FONT_WIDTH);
-				x += 5 * FONT_WIDTH;
+			if (s->touches < 1) {
+				// 0 flag touches white
+				color.c = RGBA_TO_COLOR(0xFF, 0xFF, 0xFF, 0xFF);
 			}
+			else if (s->touches < 2) {
+				// 1 flag touches yellow
+				color.c = RGBA_TO_COLOR(0xFF, 0xFF, 0x00, 0xFF);
+			}
+			else if (s->touches < 5) {
+				// 2-4 flag touches orange
+				color.c = RGBA_TO_COLOR(0xFF, 0x55, 0x00, 0xFF);
+			}
+			else if (s->touches < 10) {
+				// 5-9 flag touches pink
+				color.c = RGBA_TO_COLOR(0xBB, 0x33, 0xBB, 0xFF);
+			}
+			else {
+				// >9 flag touches green
+				color.c = RGBA_TO_COLOR(0x00, 0xFF, 0x00, 0xFF);
+			}
+			snprintf(num, sizeof(num), "%4i", s->touches);
+			Draw_SColoredStringAligned(x, y, num, &color, 1, scale, alpha, proportional, text_align_right, x + 4 * FONT_WIDTH);
+			x += 5 * FONT_WIDTH;
 
-			if (stats_caps) // flag captures
-			{
-				if (playerstats[6] < 1) {
-					// 0 caps white
-					color.c = RGBA_TO_COLOR(0xFF, 0xFF, 0xFF, 0xFF);
-				}
-				else if (playerstats[6] < 2) {
-					// 1 cap yellow
-					color.c = RGBA_TO_COLOR(0xFF, 0xFF, 0x00, 0xFF);
-				}
-				else if (playerstats[6] < 5) {
-					// 2-4 caps orange
-					color.c = RGBA_TO_COLOR(0xFF, 0x55, 0x00, 0xFF);
-				}
-				else if (playerstats[6] < 10) {
-					// 5-9 caps pink
-					color.c = RGBA_TO_COLOR(0xBB, 0x33, 0xBB, 0xFF);
-				}
-				else {
-					// >9 caps green
-					color.c = RGBA_TO_COLOR(0x00, 0xFF, 0x00, 0xFF);
-				}
-				snprintf(num, sizeof(num), "%4i", playerstats[6]);
-				Draw_SColoredStringAligned(x, y, num, &color, 1, scale, alpha, proportional, text_align_right, x + 4 * FONT_WIDTH);
-				x += 5 * FONT_WIDTH;
+			if (s->caps < 1) {
+				// 0 caps white
+				color.c = RGBA_TO_COLOR(0xFF, 0xFF, 0xFF, 0xFF);
 			}
+			else if (s->caps < 2) {
+				// 1 cap yellow
+				color.c = RGBA_TO_COLOR(0xFF, 0xFF, 0x00, 0xFF);
+			}
+			else if (s->caps < 5) {
+				// 2-4 caps orange
+				color.c = RGBA_TO_COLOR(0xFF, 0x55, 0x00, 0xFF);
+			}
+			else if (s->caps < 10) {
+				// 5-9 caps pink
+				color.c = RGBA_TO_COLOR(0xBB, 0x33, 0xBB, 0xFF);
+			}
+			else {
+				// >9 caps green
+				color.c = RGBA_TO_COLOR(0x00, 0xFF, 0x00, 0xFF);
+			}
+			snprintf(num, sizeof(num), "%4i", s->caps);
+			Draw_SColoredStringAligned(x, y, num, &color, 1, scale, alpha, proportional, text_align_right, x + 4 * FONT_WIDTH);
+			x += 5 * FONT_WIDTH;
+
+			p = s->damage;
+			if (p > 99999) {
+				p = 99999;
+			}
+			snprintf(num, sizeof(num), "%5i", p);
+			Draw_SStringAligned(x, y, num, scale, ca_alpha, proportional, text_align_right, x + 5 * FONT_WIDTH);
+			x += 6 * FONT_WIDTH; // move it forward, ready to print next column
 		}
 
 		y += skip;
@@ -1822,7 +1682,7 @@ static void Sbar_DeathmatchOverlay(int start)
 
 static void Sbar_TeamOverlay(void)
 {
-	int i, k, x, y, xofs, plow, phigh, pavg, rank_width, skip = 10;
+	int i, k, x, y, xofs, rank_width, skip = 10;
 	char num[12], team[5];
 	team_t *tm;
 	mpic_t *pic;
@@ -1889,29 +1749,23 @@ static void Sbar_TeamOverlay(void)
 
 	lhs = x;
 
-	Draw_SStringAligned(x, y, "low", 1, 1, proportional, text_align_right, x + 3 * FONT_WIDTH);
-	x += 3 * FONT_WIDTH;
-	Draw_SStringAligned(x, y, "/", 1, 1, proportional, text_align_right, x + FONT_WIDTH);
-	x += FONT_WIDTH;
-	Draw_SStringAligned(x, y, "avg", 1, 1, proportional, text_align_right, x + FONT_WIDTH * 3);
-	x += 3 * FONT_WIDTH;
-	Draw_SStringAligned(x, y, "/", 1, 1, proportional, text_align_right, x + FONT_WIDTH);
-	x += FONT_WIDTH;
-	Draw_SStringAligned(x, y, "high", 1, 1, proportional, text_align_right, x + FONT_WIDTH * 4);
+	Draw_SStringAligned(x, y, "team", 1, 1, proportional, text_align_right, x + FONT_WIDTH * 4);
 	x += 4 * FONT_WIDTH;
 	x += FONT_WIDTH;
-	Draw_SStringAligned(x, y, "team", 1, 1, proportional, text_align_center, x + FONT_WIDTH * 4);
+
+	Draw_SStringAligned(x, y, "caps", 1, 1, proportional, text_align_right, x + FONT_WIDTH * 4);
 	x += 4 * FONT_WIDTH;
 	x += FONT_WIDTH;
-	Draw_SStringAligned(x, y, (cl.scoring_system == SCORING_SYSTEM_TEAMFRAGS ? "score" : "total"), 1, 1, proportional, text_align_right, x + FONT_WIDTH * 5);
-	x += 5 * FONT_WIDTH;
+
+	Draw_SStringAligned(x, y, "tchs", 1, 1, proportional, text_align_right, x + FONT_WIDTH * 4);
+	x += 4 * FONT_WIDTH;
 	x += FONT_WIDTH;
-	if ((cl.teamfortress || scr_scoreboard_showflagstats.value) && Stats_IsFlagsParsed()) {
-		Draw_SStringAligned(x, y, "caps", 1, 1, proportional, text_align_center, x + FONT_WIDTH * 4);
-		x += 4 * FONT_WIDTH;
-		x += FONT_WIDTH;
-	}
-	Draw_SStringAligned(x, y, "players", 1, 1, proportional, text_align_left, x + FONT_WIDTH * 7);
+
+	Draw_SStringAligned(x, y, "dmg", 1, 1, proportional, text_align_right, x + FONT_WIDTH * 6);
+	x += 6 * FONT_WIDTH;
+	x += FONT_WIDTH;
+
+	Draw_SStringAligned(x, y, "players", 1, 1, proportional, text_align_right, x + FONT_WIDTH * 7);
 	x = lhs;
 
 	y += 10;
@@ -1922,74 +1776,38 @@ static void Sbar_TeamOverlay(void)
 		k = teamsort[i];
 		tm = teams + k;
 		x = lhs;
-
-		Draw_AlphaFill(xofs, y, rank_width, skip, 2, SCOREBOARD_ALPHA);
+		
+		Draw_AlphaFill(xofs, y, rank_width, skip, Sbar_ColorForMap(tm->topcolor), (tm->myteam ? 1.0f : 0.5f));
 
 		if (!scr_scoreboard_borderless.value) {
 			Draw_Fill(xofs - 1, y, 1, skip, 0);						//Border - Left
 			Draw_Fill(xofs - 1 + rank_width + 1, y, 1, skip, 0);		//Border - Right
 		}
 
-		// draw pings
-		plow = tm->plow;
-		if (plow < 0 || plow > 999) {
-			plow = 999;
-		}
-
-		phigh = tm->phigh;
-		if (phigh < 0 || phigh > 999) {
-			phigh = 999;
-		}
-
-		pavg = tm->players ? tm->ptotal / tm->players : 999;
-		if (pavg < 0 || pavg > 999) {
-			pavg = 999;
-		}
-
-		snprintf(num, sizeof(num), "%3i", plow);
-		Draw_SStringAligned(x, y, num, 1, 1, proportional, text_align_right, x + 3 * FONT_WIDTH);
-		x += 3 * FONT_WIDTH;
-		Draw_SStringAligned(x, y, "/", 1, 1, proportional, text_align_right, x + FONT_WIDTH);
-		x += FONT_WIDTH;
-		snprintf(num, sizeof(num), "%3i", pavg);
-		Draw_SStringAligned(x, y, num, 1, 1, proportional, text_align_right, x + 3 * FONT_WIDTH);
-		x += 3 * FONT_WIDTH;
-		Draw_SStringAligned(x, y, "/", 1, 1, proportional, text_align_right, x + FONT_WIDTH);
-		x += FONT_WIDTH;
-		snprintf(num, sizeof(num), "%3i", phigh);
-		Draw_SStringAligned(x, y, num, 1, 1, proportional, text_align_right, x + 3 * FONT_WIDTH);
-		x += 3 * FONT_WIDTH;
-		x += FONT_WIDTH;
-
 		// draw team
-		if (Sbar_ShowScoreboardIndicator() && tm->myteam) {
-			Draw_SStringAligned(x, y, "\020", 1, 1, proportional, text_align_right, x + FONT_WIDTH);
-		}
-		x += FONT_WIDTH;
 		strlcpy(team, tm->team, sizeof(team));
-		Draw_SStringAligned(x, y, team, 1, 1, proportional, text_align_center, x + 4 * FONT_WIDTH);
+		Draw_SStringAligned(x, y, team, 1, 1, proportional, text_align_right, x + 4 * FONT_WIDTH);
 		x += 4 * FONT_WIDTH;
-		if (Sbar_ShowScoreboardIndicator() && tm->myteam) {
-			Draw_SStringAligned(x, y, "\021", 1, 1, proportional, text_align_left, x + FONT_WIDTH);
-		}
 		x += FONT_WIDTH;
 
-		// draw total
-		snprintf(num, sizeof(num), "%5i", tm->frags);
-		Draw_SStringAligned(x, y, num, 1, 1, proportional, text_align_right, x + 5 * FONT_WIDTH);
-		x += 5 * FONT_WIDTH;
+		snprintf(num, sizeof(num), "%i", tm->caps);
+		Draw_SStringAligned(x, y, num, 1, 1, proportional, text_align_right, x + 4 * FONT_WIDTH);
+		x += 4 * FONT_WIDTH;
 		x += FONT_WIDTH;
 
-		if ((cl.teamfortress || scr_scoreboard_showflagstats.value) && Stats_IsFlagsParsed()) {
-			snprintf(num, sizeof(num), "%4i", tm->caps);
-			Draw_SStringAligned(x, y, num, 1, 1, proportional, text_align_right, x + 4 * FONT_WIDTH);
-			x += 4 * FONT_WIDTH;
-			x += FONT_WIDTH;
-		}
+		snprintf(num, sizeof(num), "%i", tm->touches);
+		Draw_SStringAligned(x, y, num, 1, 1, proportional, text_align_right, x + 4 * FONT_WIDTH);
+		x += 4 * FONT_WIDTH;
+		x += FONT_WIDTH;
+
+		snprintf(num, sizeof(num), "%i", tm->damage);
+		Draw_SStringAligned(x, y, num, 1, 1, proportional, text_align_right, x + 6 * FONT_WIDTH);
+		x += 6 * FONT_WIDTH;
+		x += FONT_WIDTH;
 
 		// draw players
-		snprintf(num, sizeof(num), "%7i", tm->players);
-		Draw_SStringAligned(x, y, num, 1, 1, proportional, text_align_left, x + 7 * FONT_WIDTH);
+		snprintf(num, sizeof(num), "%i", tm->players);
+		Draw_SStringAligned(x, y, num, 1, 1, proportional, text_align_right, x + 7 * FONT_WIDTH);
 
 		y += skip;
 	}

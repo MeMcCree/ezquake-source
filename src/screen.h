@@ -93,6 +93,7 @@ typedef struct hud_element_s {
 	float					alpha;
 	char					*f_hover, *f_button;
 	unsigned				scr_width, scr_height;
+	char align;
 } hud_element_t;
 
 void Hud_262Init (void);

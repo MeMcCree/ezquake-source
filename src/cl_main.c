@@ -1910,7 +1910,7 @@ static void CL_InitLocal(void)
 		Cvar_SetValue (&allow_scripts, 0);
 
  	Info_SetValueForStarKey (cls.userinfo, "*client", "ezQuake-tf", MAX_INFO_STRING);
-	Info_SetValueForStarKey(cls.userinfo, "*clientver", "4", MAX_INFO_STRING);
+	Info_SetValueForStarKey(cls.userinfo, "*clientver", "6", MAX_INFO_STRING);
 
 	if (COM_CheckParm(cmdline_param_client_noindphys))
 	{

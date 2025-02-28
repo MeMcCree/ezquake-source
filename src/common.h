@@ -113,6 +113,18 @@ typedef enum
 #define STAT_DISPADD 						28
 #define STAT_SPYINFO						29
 
+#define PC_UNDEFINED	0
+
+#define PC_SCOUT			1
+#define PC_SNIPER			2
+#define PC_SOLDIER		3
+#define PC_DEMOMAN		4
+#define PC_MEDIC			5
+#define PC_HVYWEAP		6
+#define PC_PYRO				7
+#define PC_SPY				8
+#define PC_ENGINEER		9
+
 // item flags
 #define	IT_SHOTGUN              1
 #define	IT_SUPER_SHOTGUN        2

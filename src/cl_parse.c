@@ -4090,7 +4090,15 @@ void CL_ParseServerMessage (void)
 				}
 				break;
 			}
-		}
+			case svc_updatetfinfo:
+			{
+				int j = MSG_ReadLong();
+				int idx = MSG_ReadLong();
+				int val = MSG_ReadLong();
+				cl.players[j].tfinfo[idx] = val;
+				break;
+			}
+	}
 
 		// cl_messages, update size		if (cmd < NUMMSG)
 			cl_messages[cmd].size += msg_readcount - oldread;

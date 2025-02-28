@@ -197,6 +197,11 @@ static char* Skin_FindName(player_info_t* sc, qbool* is_teammate)
 		strlcpy(name, baseskin.string, sizeof(name));
 	}
 
+	// EDIT TO FIT NEW TFINFO
+	if (sc->playerclass == PC_SPY && cl.players[cl.playernum].team_no == sc->team_no) {
+		return "tf_spy";
+	}
+
 	return name;
 }
 

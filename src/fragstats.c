@@ -716,7 +716,7 @@ foundmatch:
 			// not enough data to stop streaks of killed man
 			break;
 		}
-		case mt_flagtouch:
+		/*case mt_flagtouch:
 		{
 			fragstats[i].touches++;
 			Update_FlagStatus(i, player1->team, true);
@@ -742,7 +742,7 @@ foundmatch:
 				VX_TrackerFlagCapture(fragstats[i].captures);
 			flag_captured = true;
 			break;
-		}
+		}*/
 		default:
 			break;
 	}

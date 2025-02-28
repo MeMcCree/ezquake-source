@@ -128,6 +128,7 @@ void Hud_Add_f(void)
 	unsigned	old_width = 0;
 	float		old_alpha = 1;
 	qbool	old_enabled = true;
+	char old_align = 1;
 
 	if (Cmd_Argc() != 4)
 		Com_Printf("Usage: hud_add <name> <type> <param>\n");
@@ -138,6 +139,7 @@ void Hud_Add_f(void)
 				old_width = elem->width;
 				old_alpha = elem->alpha;
 				old_enabled = elem->flags & HUD_ENABLED;
+				old_align = elem->align;
 				next = elem->next; // Sergio
 				if (prev) {
 					prev->next = elem->next;
@@ -192,6 +194,7 @@ void Hud_Add_f(void)
 		elem->alpha = old_alpha;
 		if (!old_enabled)
 			elem->flags &= ~HUD_ENABLED;
+		elem->align = old_align;
 
 		// Sergio -->
 		// Restoring old hud place in hud_list
@@ -251,8 +254,8 @@ void Hud_Position_f(void)
 {
 	hud_element_t *elem;
 
-	if (Cmd_Argc() != 5) {
-		Com_Printf("Usage: hud_position <name> <pos_type> <x> <y>\n");
+	if (Cmd_Argc() != 5 && Cmd_Argc() != 6) {
+		Com_Printf("Usage: hud_position <name> <pos_type> <x> <y> (opt.)<align>\n");
 		return;
 	}
 	if (!(elem = Hud_FindElement(Cmd_Argv(1)))) {
@@ -263,6 +266,10 @@ void Hud_Position_f(void)
 	elem->coords[0] = atoi(Cmd_Argv(2));
 	elem->coords[1] = atoi(Cmd_Argv(3));
 	elem->coords[2] = atoi(Cmd_Argv(4));
+
+	if (Cmd_Argc() == 6) {
+		elem->align = atoi(Cmd_Argv(5));
+	}
 }
 
 void Hud_Elem_Bg(hud_element_t *elem)
@@ -563,11 +570,23 @@ static qbool Hud_TranslateCoords(hud_element_t *elem, int *x, int *y)
 	case 4:	*x = elem->coords[1] * 8 + 1;					// bottom left
 		*y = vid.conheight - sb_lines - (elem->coords[2] + 1) * 8;
 		break;
-	case 5:	*x = vid.conwidth / 2 - l * 4 + elem->coords[1] * 8;// top center
+	case 5:	*x = vid.conwidth / 2 + elem->coords[1] * 8;// top center
 		*y = elem->coords[2] * 8;
 		break;
-	case 6:	*x = vid.conwidth / 2 - l * 4 + elem->coords[1] * 8;// bottom center
+	case 6:	*x = vid.conwidth / 2 + elem->coords[1] * 8;// bottom center
 		*y = vid.conheight - sb_lines - (elem->coords[2] + 1) * 8;
+		break;
+	default:
+		return false;
+	}
+	switch (elem->align) {
+	case 1:
+		break;
+	case 2:
+		*x -= elem->scr_width / 2;
+		break;
+	case 3:
+		*x -= elem->scr_width;
 		break;
 	default:
 		return false;
